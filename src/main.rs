@@ -41,6 +41,10 @@ fn main() {
             eprintln!("Error on Day 4: {e}");
             exit(3);
         },
+        5 => if let Err(e) = answers::day05::answer() {
+            eprintln!("Error on Day 5: {e}");
+            exit(3);
+        },
         _ => {
             eprintln!("Error: Day should exist");
             exit(2);
