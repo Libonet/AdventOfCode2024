@@ -1,4 +1,4 @@
-use std::{borrow::BorrowMut, fs::read_to_string, io};
+use std::{fs::read_to_string, io, collections::HashSet};
 
 struct Mask {
     relative_pos: Vec<isize>,
@@ -27,7 +27,7 @@ impl Mask {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
 enum Dirs {
     Up,
     Down,
@@ -71,7 +71,7 @@ fn part1() -> Result<(), io::Error>{
     let masks = direction_masks(width);
     let mut initial_dir = Dirs::Up;
 
-    let result = simulate_path(pos, width, &mut contents, &mut initial_dir, masks);
+    let result = simulate_path(pos, width, &mut contents, &mut initial_dir, &masks);
     println!("result = {result}");
 
     Ok(())
@@ -97,11 +97,11 @@ fn get_mask<'a>(masks: &'a [Mask], dir: &Dirs) -> &'a Mask {
     }
 }
 
-fn simulate_path(pos: isize, w: isize, content: &mut [char], dir: &mut Dirs, masks: Vec<Mask>) -> i32 {
+fn simulate_path(pos: isize, w: isize, content: &mut [char], dir: &mut Dirs, masks: &[Mask]) -> i32 {
     let mut pos = pos;
     let mut res = 0;
 
-    let mut mask = get_mask(&masks, dir);
+    let mut mask = get_mask(masks, dir);
 
     loop {
         let curr_pos = content[pos as usize];
@@ -114,11 +114,8 @@ fn simulate_path(pos: isize, w: isize, content: &mut [char], dir: &mut Dirs, mas
             match char.first().unwrap() {
                 '#' => { 
                     dir.rotate();
-                    mask = get_mask(&masks, dir);
+                    mask = get_mask(masks, dir);
                 },
-                '.' => {
-                    pos = advance(pos, dir, w);
-                }
                 _ => { pos = advance(pos, dir, w); },
             }
         } else {
@@ -141,12 +138,73 @@ fn advance(pos: isize, dir: &Dirs, w: isize) -> isize {
 fn part2() -> Result<(), io::Error>{
     let contents = read_to_string("input/day06.txt")?;
 
-    todo!("obtain part2");
+    let width = contents.find("\n").unwrap() as isize;
+    let mut contents = contents.replace("\n", "").chars().collect::<Vec<char>>();
 
-    let result = 0; // so rust shuts up
+    let initial_pos = find_guard(&contents);
+
+    let masks = direction_masks(width);
+    let mut initial_dir = Dirs::Up;
+
+    let mut path_result = contents.clone();
+    let _result = simulate_path(initial_pos, width, &mut path_result, &mut initial_dir, &masks);
+
+    let mut result = 0;
+    
+    for pos in 0..initial_pos {
+        if path_result[pos as usize] == 'X' {
+
+            result += check_loop(initial_pos, pos, width, &mut contents, &masks)
+        }
+    }
+    for pos in initial_pos+1..path_result.len() as isize {
+        if path_result[pos as usize] == 'X' {
+
+            result += check_loop(initial_pos, pos, width, &mut contents, &masks)
+        }
+    }
+
     println!("result = {result}");
     
     Ok(())
+}
+
+fn check_loop(initial_pos: isize, block_pos: isize, w: isize, content: &mut [char], masks: &[Mask]) -> i32{
+    let mut counts = 0;
+    let mut dir = Dirs::Up;
+
+    let mut pos = initial_pos;
+
+    let mut mask = get_mask(masks, &dir);
+
+    let mut visited = HashSet::new();
+
+    let save_state = content[block_pos as usize];
+    content[block_pos as usize] = 'O';
+
+    loop {
+        let looped = !visited.insert((pos, dir.clone()));
+        if looped {
+            counts = 1;
+            break;
+        }
+        let look_ahead = mask.apply(pos, w, content);
+        if let Some(char) = look_ahead {
+            match char.first().unwrap() {
+                '#' | 'O' => { 
+                    dir.rotate();
+                    mask = get_mask(masks, &dir);
+                },
+                _ => { pos = advance(pos, &dir, w); },
+            }
+        } else {
+            break;
+        }
+    }
+
+    content[block_pos as usize] = save_state;
+
+    counts
 }
 
 pub fn answer() -> Result<(), io::Error>{
