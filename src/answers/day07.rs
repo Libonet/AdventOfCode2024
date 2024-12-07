@@ -62,25 +62,20 @@ fn part1() -> Result<(), io::Error>{
         .map(|line| {
             let ret: Vec<&str> = line.split(':').collect();
             let target = ret[0].parse::<u64>().unwrap();
-            let rest: Vec<&str> = ret[1].split_whitespace().collect();
-            let mut rest = rest.iter().map(|text| text.parse::<u64>().unwrap());
 
-            let first = rest.next().unwrap();
-            let rest: Vec<u64> = rest.collect();
+            let rest: Vec<u64> = ret[1]
+                .split_whitespace()
+                .rev()
+                .map(|text| text.parse::<u64>().unwrap())
+                .collect();
 
-            let results = operate(first, &rest);
-            let mut result = 0;
-            for val in results {
-                if val == target {
-                    result = target;
-                    break;
-                }
+            if better_operate(target, &rest) {
+                target
+            } else {
+                0
             }
-
-            result
         })
         .sum();
-        
 
     println!("result = {result:#?}");
 
@@ -100,6 +95,24 @@ fn operate(acc: u64, values: &[u64]) -> Vec<u64> {
     sum
 }
 
+fn better_operate(acc: u64, values: &[u64]) -> bool {
+    if values.is_empty() {
+        return false;
+    }
+    if acc == values[0] {
+        return true;
+    }
+
+    let mut mul = false;
+    if acc % values[0] == 0 {
+        mul = better_operate(acc / values[0], &values[1..]);
+    }
+
+    let sum = better_operate(acc - values[0], &values[1..]);
+
+    sum || mul
+}
+
 fn part2() -> Result<(), io::Error>{
     let contents = read_to_string("input/day07.txt")?; // input/dayxx.txt
 
@@ -108,50 +121,72 @@ fn part2() -> Result<(), io::Error>{
             let ret: Vec<&str> = line.split(':').collect();
             let target = ret[0].parse::<u64>().unwrap();
 
-            let rest: Vec<&str> = ret[1].split_whitespace().collect();
+            let rest: Vec<u64> = ret[1]
+                .split_whitespace()
+                .rev()
+                .map(|text| text.parse::<u64>().unwrap())
+                .collect();
 
-            let first = rest[0];
-            let rest = &rest[1..];
 
-            let results = operate_str(first, rest);
-            let mut result = 0;
-            for val in results {
-                if val.parse::<u64>().unwrap() == target {
-                    result = target;
-                    break;
-                }
+            if better_operate_cons(target, &rest) {
+                target
+            } else {
+                0
             }
-
-            result
         })
         .sum();
-        
 
     println!("result = {result:#?}");
-   
+
     Ok(())
 }
 
-fn operate_str(acc: &str, values: &[&str]) -> Vec<String> {
+fn operate_cons(acc: &str, values: &[&str]) -> Vec<String> {
     if values.is_empty() {
         return vec![acc.to_string()];
     }
 
-    let mut cons = operate_str(&format!("{acc}{}", values[0]), &values[1..]);
+    let mut cons = operate_cons(&format!("{acc}{}", values[0]), &values[1..]);
 
     let acc = acc.parse::<u64>().unwrap();
     let val = values[0].parse::<u64>().unwrap();
 
     let add = (acc + val).to_string();
-    let mut sum = operate_str(&add, &values[1..]);
+    let mut sum = operate_cons(&add, &values[1..]);
     let mul = (acc * val).to_string();
-    let mut mul = operate_str(&mul, &values[1..]);
+    let mut mul = operate_cons(&mul, &values[1..]);
 
     sum.append(&mut mul);
 
     sum.append(&mut cons);
 
     sum
+}
+
+// go backwards from target to 0
+fn better_operate_cons(acc: u64, values: &[u64]) -> bool {
+    if values.is_empty() {
+        return false;
+    }
+    if acc == values[0] {
+        return true;
+    }
+
+    let mut mul = false;
+    if acc % values[0] == 0 {
+        mul = better_operate_cons(acc / values[0], &values[1..]);
+    }
+    
+    let new_acc = acc - values[0];
+    let sum = better_operate_cons(new_acc, &values[1..]);
+
+    let mut cons = false;
+    let tens = 10u64.pow(values[0].ilog10() + 1);
+    if new_acc % tens == 0 {
+        cons = better_operate_cons(new_acc / tens, &values[1..]);
+    }
+
+    sum || mul || cons
 }
 
 pub fn answer() -> Result<(), io::Error>{
