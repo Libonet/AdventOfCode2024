@@ -277,19 +277,13 @@ mod test_topo {
 
         println!("rules = {rules:#?}");
 
-        let updates = [
-            vec![75,97,47,61,53],
-            vec![61,13,29],
-            vec![97,13,75,29,47],
-        ];
+        let updates = 
+"75,97,47,61,53
+61,13,29
+97,13,75,29,47";
 
-        let sorted = build_topograph(&rules, &updates[0]).kahn_algorithm();
-        assert_eq!(sorted, vec![97,75,47,61,53]);
+        let result = fix_updates(updates, rules);
 
-        let sorted = build_topograph(&rules, &updates[1]).kahn_algorithm();
-        assert_eq!(sorted, vec![61,29,13]);
-
-        let sorted = build_topograph(&rules, &updates[2]).kahn_algorithm();
-        assert_eq!(sorted, vec![97,75,47,29,13]);
+        assert_eq!(result, 123);
     }
 }

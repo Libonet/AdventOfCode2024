@@ -82,6 +82,7 @@ fn part1() -> Result<(), io::Error>{
     Ok(())
 }
 
+/*
 fn operate(acc: u64, values: &[u64]) -> Vec<u64> {
     if values.is_empty() {
         return vec![acc];
@@ -94,6 +95,7 @@ fn operate(acc: u64, values: &[u64]) -> Vec<u64> {
 
     sum
 }
+*/
 
 fn better_operate(acc: u64, values: &[u64]) -> bool {
     if values.is_empty() {
@@ -141,6 +143,7 @@ fn part2() -> Result<(), io::Error>{
     Ok(())
 }
 
+/*
 fn operate_cons(acc: &str, values: &[&str]) -> Vec<String> {
     if values.is_empty() {
         return vec![acc.to_string()];
@@ -162,6 +165,7 @@ fn operate_cons(acc: &str, values: &[&str]) -> Vec<String> {
 
     sum
 }
+*/
 
 // go backwards from target to 0
 fn better_operate_cons(acc: u64, values: &[u64]) -> bool {
