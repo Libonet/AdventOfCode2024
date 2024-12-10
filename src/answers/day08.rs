@@ -1,91 +1,13 @@
-use std::{collections::HashMap, fs::read_to_string, io, ops::{Add, Sub, Mul}};
-
-#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
-struct Pos (i32, i32);
-
-impl Sub for Pos {
-    type Output = Pos;
-
-    fn sub(self, rhs: Self) -> Self::Output {
-        Self (self.0 - rhs.0, self.1 - rhs.1)
-    }
-}
-
-impl Add for Pos {
-    type Output = Pos;
-
-    fn add(self, rhs: Self) -> Self::Output {
-        Self (self.0 + rhs.0, self.1 + rhs.1)
-    }
-}
-
-impl Mul<i32> for Pos {
-    type Output = Pos;
-
-    fn mul(self, rhs: i32) -> Self::Output {
-        Self (self.0 * rhs, self.1 * rhs)
-    }
-}
-
-#[derive(Debug, Clone)]
-struct Matrix {
-    rows: Vec<Vec<char>>,
-    row_count: usize,
-    width: usize,
-    pos: Pos,
-}
-
-impl Matrix {
-    fn new(rows: Vec<Vec<char>>) -> Self {
-        assert!(!rows.is_empty());
-        let width = rows[0].len();
-        assert!(rows.iter().map(|row| row.len()).all(|len| len == width));
-
-        let row_count = rows.len();
-        let pos = Pos(0,0);
-        Self { rows, row_count, width, pos }
-    }
-
-    fn get(&self, pos: &Pos) -> Option<&char> {
-        let Pos(x,y) = *pos;
-
-        self.rows.get(x as usize)?.get(y as usize)
-    }
-
-    fn get_mut(&mut self, pos: &Pos) -> Option<&mut char> {
-        let Pos(x,y) = *pos;
-
-        self.rows.get_mut(x as usize)?.get_mut(y as usize)
-    }
-}
-
-impl Iterator for Matrix {
-    type Item = char;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.pos.1 < self.width as i32 {
-            let pos = self.pos;
-            self.pos.1 += 1;
-
-            self.get(&pos).copied()
-        } else if self.pos.0 < self.row_count as i32 {
-            let pos = self.pos;
-            self.pos.0 += 1;
-            self.pos.1 = 0;
-
-            self.get(&pos).copied()
-        } else {
-            None
-        }
-    }
-}
+use std::{collections::HashMap, fs::read_to_string, io};
+use crate::matrix::{Matrix, Pos};
 
 fn part1() -> Result<(), io::Error>{
     let contents = read_to_string("input/day08.txt")?; // input/dayxx.txt
 
-    let rows: Vec<Vec<char>> = contents.lines().map(|line| line.chars().collect::<Vec<char>>()).collect::<Vec<Vec<char>>>();
+    let width = contents.find("\n").unwrap();
+    let rows: Vec<char> = contents.replace("\n", "").chars().collect();
 
-    let matrix = Matrix::new(rows);
+    let matrix = Matrix::new(rows, width);
 
     let result = find_antinodes(matrix);
 
@@ -94,22 +16,25 @@ fn part1() -> Result<(), io::Error>{
     Ok(())
 }
 
-fn find_antinodes(matrix: Matrix) -> i32 {
+fn find_antinodes(matrix: Matrix<char>) -> i32 {
     let alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     let mut char_positions = HashMap::with_capacity(alphabet.len());
     for chr in alphabet.chars() {
         char_positions.insert(chr, Vec::<Pos>::new());
     }
 
-    let mut ret_matrix = matrix.clone();
-    for x in 0..ret_matrix.row_count {
-        for y in 0..ret_matrix.width {
-            let pos = Pos(x as i32,y as i32);
-            *ret_matrix.get_mut(&pos).unwrap() = '.';
+    let mut ret_matrix = Matrix::with_capacity(matrix.row_count(), matrix.width()); 
 
-            let chr = *matrix.get(&pos).unwrap();
-            let vec_ref = char_positions.entry(chr).or_default();
-            vec_ref.push(pos);
+    let mut pos = Pos(0, 0);
+    for mat_entry in &matrix {
+        ret_matrix.push('.');
+
+        let vec_ref = char_positions.entry(*mat_entry).or_default();
+        vec_ref.push(pos);
+        pos.1 += 1;
+        if pos.1 >= matrix.width() as i32 {
+            pos.0 += 1;
+            pos.1 = 0;
         }
     }
 
@@ -133,12 +58,9 @@ fn find_antinodes(matrix: Matrix) -> i32 {
     }
 
     let mut result = 0;
-    for x in 0..ret_matrix.row_count {
-        for y in 0..ret_matrix.width {
-            let pos = Pos(x as i32,y as i32);
-            if *ret_matrix.get(&pos).unwrap() == '$' {
-                result += 1;
-            }
+    for val in ret_matrix {
+        if val == '$' {
+            result += 1;
         }
     }
 
@@ -148,9 +70,10 @@ fn find_antinodes(matrix: Matrix) -> i32 {
 fn part2() -> Result<(), io::Error>{
     let contents = read_to_string("input/day08.txt")?; // input/dayxx.txt
 
-    let rows: Vec<Vec<char>> = contents.lines().map(|line| line.chars().collect::<Vec<char>>()).collect::<Vec<Vec<char>>>();
+    let width = contents.find("\n").unwrap();
+    let rows: Vec<char> = contents.replace("\n", "").chars().collect();
 
-    let matrix = Matrix::new(rows);
+    let matrix = Matrix::new(rows, width);
 
     let result = find_antinodes_harmonics(matrix);
     
@@ -159,22 +82,25 @@ fn part2() -> Result<(), io::Error>{
     Ok(())
 }
 
-fn find_antinodes_harmonics(matrix: Matrix) -> i32 {
+fn find_antinodes_harmonics(matrix: Matrix<char>) -> i32 {
     let alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     let mut char_positions = HashMap::with_capacity(alphabet.len());
     for chr in alphabet.chars() {
         char_positions.insert(chr, Vec::<Pos>::new());
     }
 
-    let mut ret_matrix = matrix.clone();
-    for x in 0..ret_matrix.row_count {
-        for y in 0..ret_matrix.width {
-            let pos = Pos(x as i32,y as i32);
-            *ret_matrix.get_mut(&pos).unwrap() = '.';
+    let mut ret_matrix = Matrix::with_capacity(matrix.row_count(), matrix.width());
 
-            let chr = *matrix.get(&pos).unwrap();
-            let vec_ref = char_positions.entry(chr).or_default();
-            vec_ref.push(pos);
+    let mut pos = Pos(0, 0);
+    for mat_entry in &matrix {
+        ret_matrix.push('.');
+
+        let vec_ref = char_positions.entry(*mat_entry).or_default();
+        vec_ref.push(pos);
+        pos.1 += 1;
+        if pos.1 >= matrix.width() as i32 {
+            pos.0 += 1;
+            pos.1 = 0;
         }
     }
 
@@ -204,15 +130,12 @@ fn find_antinodes_harmonics(matrix: Matrix) -> i32 {
     }
 
     let mut result = 0;
-    for x in 0..ret_matrix.row_count {
-        for y in 0..ret_matrix.width {
-            let pos = Pos(x as i32,y as i32);
-            if *ret_matrix.get(&pos).unwrap() == '$' {
-                result += 1;
-            }
+    for val in ret_matrix {
+        if val == '$' {
+            result += 1;
         }
     }
-
+    
     result
 }
 
@@ -246,9 +169,10 @@ mod tests {
 ............
 ............";
         
-        let rows: Vec<Vec<char>> = contents.replace("\n", "").lines().map(|line| line.chars().collect::<Vec<char>>()).collect();
+        let width = contents.find("\n").unwrap();
+        let rows: Vec<char> = contents.replace("\n", "").chars().collect();
 
-        let matrix = Matrix::new(rows);
+        let matrix = Matrix::new(rows, width);
 
         let result = find_antinodes(matrix);
         
@@ -271,9 +195,10 @@ mod tests {
 ............
 ............";
         
-        let rows: Vec<Vec<char>> = contents.lines().map(|line| line.chars().collect::<Vec<char>>()).collect::<Vec<Vec<char>>>();
+        let width = contents.find("\n").unwrap();
+        let rows: Vec<char> = contents.replace("\n", "").chars().collect();
 
-        let matrix = Matrix::new(rows);
+        let matrix = Matrix::new(rows, width);
 
         let result = find_antinodes_harmonics(matrix);
         
@@ -283,20 +208,21 @@ mod tests {
     #[test]
     fn part2_example2() {
         let contents = "\
-T....#....
+T.........
 ...T......
-.T....#...
-.........#
-..#.......
+.T........
 ..........
-...#......
 ..........
-....#.....
+..........
+..........
+..........
+..........
 ..........";
 
-        let rows: Vec<Vec<char>> = contents.lines().map(|line| line.chars().collect::<Vec<char>>()).collect::<Vec<Vec<char>>>();
+        let width = contents.find("\n").unwrap();
+        let rows: Vec<char> = contents.replace("\n", "").chars().collect();
 
-        let matrix = Matrix::new(rows);
+        let matrix = Matrix::new(rows, width);
 
         let result = find_antinodes_harmonics(matrix);
         
