@@ -1,33 +1,27 @@
 use std::{fs::read_to_string, io};
 
-fn part1() -> Result<(), io::Error>{
-    let contents = read_to_string("")?; // input/dayxx.txt
-
+fn part1(contents: String){
     todo!("obtain part1");
 
     let result = 0; // so rust shuts up
     println!("result = {result}");
-
-    Ok(())
 }
 
-fn part2() -> Result<(), io::Error>{
-    let contents = read_to_string("")?; // input/dayxx.txt
-
+fn part2(contents: String){
     todo!("obtain part2");
 
     let result = 0; // so rust shuts up
     println!("result = {result}");
-    
-    Ok(())
 }
 
 pub fn answer() -> Result<(), io::Error>{
+    let contents = read_to_string("")?; // input/dayxx.txt
+    
     println!("Part1:");
-    part1()?;
+    let _ = part1(contents.clone());
 
     println!("Part2:");
-    part2()?;
+    let _ = part2(contents);
 
     Ok(())
 }

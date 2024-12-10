@@ -1,6 +1,7 @@
 use std::{io, process::exit};
 
 mod answers;
+mod matrix;
 
 fn main() {
     println!("Input the day to get the day's answer.");
@@ -55,6 +56,14 @@ fn main() {
         },
         8 => if let Err(e) = answers::day08::answer() {
             eprintln!("Error on Day 8: {e}");
+            exit(3);
+        },
+        9 => if let Err(e) = answers::day09::answer() {
+            eprintln!("Error on Day 9: {e}");
+            exit(3);
+        },
+        10 => if let Err(e) = answers::day10::answer() {
+            eprintln!("Error on Day 10: {e}");
             exit(3);
         },
         _ => {
