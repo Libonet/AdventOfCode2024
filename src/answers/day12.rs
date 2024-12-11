@@ -7,8 +7,6 @@ fn part1(contents: String) -> i32 {
 }
 
 fn part2(contents: String) -> i32 {
-    todo!("obtain part2");
-
     let result = 0; // so rust shuts up
 
     result

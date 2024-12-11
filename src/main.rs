@@ -1,7 +1,5 @@
 use std::{io, process::exit};
-
-mod answers;
-mod matrix;
+use advent_of_code2024::answers;
 
 fn main() {
     println!("Input the day to get the day's answer.");
@@ -20,55 +18,30 @@ fn main() {
         }
     };
 
-    if !(1..=31).contains(&num) {
-        eprintln!("Error: Day should exist");
-        exit(2);
-    }
-
     match num {
-        1 => if let Err(e) = answers::day01::answer() {
-            eprintln!("Error on Day 1: {e}");
-            exit(3);
-        },
-        2 => if let Err(e) = answers::day02::answer() {
-            eprintln!("Error on Day 2: {e}");
-            exit(3);
-        },
-        3 => if let Err(e) = answers::day03::answer() {
-            eprintln!("Error on Day 3: {e}");
-            exit(3);
-        },
-        4 => if let Err(e) = answers::day04::answer() {
-            eprintln!("Error on Day 4: {e}");
-            exit(3);
-        },
-        5 => if let Err(e) = answers::day05::answer() {
-            eprintln!("Error on Day 5: {e}");
-            exit(3);
-        },
-        6 => if let Err(e) = answers::day06::answer() {
-            eprintln!("Error on Day 6: {e}");
-            exit(3);
-        },
-        7 => if let Err(e) = answers::day07::answer() {
-            eprintln!("Error on Day 7: {e}");
-            exit(3);
-        },
-        8 => if let Err(e) = answers::day08::answer() {
-            eprintln!("Error on Day 8: {e}");
-            exit(3);
-        },
-        9 => if let Err(e) = answers::day09::answer() {
-            eprintln!("Error on Day 9: {e}");
-            exit(3);
-        },
-        10 => if let Err(e) = answers::day10::answer() {
-            eprintln!("Error on Day 10: {e}");
-            exit(3);
-        },
+        1 => get_answer(1, answers::day01::answer),
+        2 => get_answer(2, answers::day02::answer),
+        3 => get_answer(3, answers::day03::answer),
+        4 => get_answer(4, answers::day04::answer),
+        5 => get_answer(5, answers::day05::answer),
+        6 => get_answer(6, answers::day06::answer),
+        7 => get_answer(7, answers::day07::answer),
+        8 => get_answer(8, answers::day08::answer),
+        9 => get_answer(9, answers::day09::answer),
+        10 => get_answer(10, answers::day10::answer),
+        11 => get_answer(11, answers::day11::answer),
+        12 => get_answer(12, answers::day12::answer),
         _ => {
             eprintln!("Error: Day should exist");
             exit(2);
         }
     }
 }
+
+fn get_answer(day: i32, answer: impl Fn() -> Result<(), io::Error>) {
+    if let Err(e) = answer() {
+        eprintln!("Error on Day {day}: {e}");
+        exit(3);
+    }
+}
+

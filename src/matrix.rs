@@ -1,72 +1,5 @@
-use std::{fmt::Debug, iter::Zip, ops::{Add, Mul, Sub}};
-
-pub struct PosIter {
-    pos: Pos,
-    width: usize,
-}
-
-impl PosIter {
-    fn new(width: usize) -> Self {
-        Self {
-            pos: Pos::new(0, 0),
-            width
-        }
-    }
-}
-
-impl Iterator for PosIter {
-    type Item = Pos;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.pos.1 < self.width as i32 {
-            let ret = Some(self.pos);
-
-            self.pos.1 += 1;
-            ret
-        } else {
-            self.pos.1 = 0;
-            self.pos.0 += 1;
-
-            let ret = Some(self.pos);
-
-            self.pos.1 += 1;
-            ret
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
-pub struct Pos (pub i32, pub i32);
-
-impl Pos {
-    pub fn new(x:i32, y:i32) -> Self {
-        Self (x,y)
-    }
-}
-
-impl Sub for Pos {
-    type Output = Pos;
-
-    fn sub(self, rhs: Self) -> Self::Output {
-        Self (self.0 - rhs.0, self.1 - rhs.1)
-    }
-}
-
-impl Add for Pos {
-    type Output = Pos;
-
-    fn add(self, rhs: Self) -> Self::Output {
-        Self (self.0 + rhs.0, self.1 + rhs.1)
-    }
-}
-
-impl Mul<i32> for Pos {
-    type Output = Pos;
-
-    fn mul(self, rhs: i32) -> Self::Output {
-        Self (self.0 * rhs, self.1 * rhs)
-    }
-}
+use std::{fmt::Debug, iter::Zip};
+use crate::position::{Pos, PosIter};
 
 #[derive(Clone)]
 pub struct Matrix<T> {
@@ -227,7 +160,8 @@ impl Mask {
     }
 
     pub fn apply<'a, T>(&self, pos: Pos, matrix: &'a Matrix<T>) -> Option<Vec<&'a T>> {
-        if pos.1 < self.left_offset as i32 || pos.1 + self.right_offset as i32 >= matrix.width() as i32 {
+        if pos.1 < self.left_offset as i32 
+           || pos.1 + self.right_offset as i32 >= matrix.width() as i32 {
             return None;
         }
 

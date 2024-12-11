@@ -1,5 +1,9 @@
 use std::{collections::HashMap, fs::read_to_string, io};
-use crate::matrix::{Matrix, Pos};
+use crate::{
+    matrix::Matrix,
+    position::Pos,
+};
+
 
 fn part1() -> Result<(), io::Error>{
     let contents = read_to_string("input/day08.txt")?; // input/dayxx.txt

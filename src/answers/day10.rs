@@ -1,5 +1,8 @@
 use std::{collections::{HashSet, VecDeque}, fs::read_to_string, io, ops::Add};
-use crate::matrix::{Matrix, Pos, Mask};
+use crate::{
+    matrix::{Matrix, Mask},
+    position::Pos,
+};
 
 fn part1(contents: &str) -> i32 {
     let width = contents.find("\n").unwrap();
