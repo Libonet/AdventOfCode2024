@@ -6,7 +6,7 @@ use std::{
 pub struct ThreadPool<T> {
     workers: Vec<Worker<T>>,
     sender: Option<mpsc::Sender<Job<T>>>,
-    my_receiver: Option<mpsc::Receiver<T>>,
+    my_receiver: Option<mpsc::Receiver<(usize,T)>>,
 }
 
 type Job<T> = Box<dyn FnOnce() -> T + Send + 'static>;
@@ -51,9 +51,9 @@ impl<T: std::marker::Send + 'static> ThreadPool<T> {
         self.sender.as_ref().unwrap().send(job).unwrap();
     }
 
-    pub fn await_returns(&self, amount: usize) -> Vec<T> {
+    pub fn await_returns(&self, amount: usize) -> Vec<(usize,T)> {
         let mut returns = Vec::new();
-        for _id in 0..amount {
+        for _i in 0..amount {
             let message = self.my_receiver.as_ref()
                 .unwrap()
                 .recv()
@@ -86,7 +86,7 @@ struct Worker<T> {
 }
 
 impl<T: std::marker::Send + 'static> Worker<T> {
-    fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Job<T>>>>, sender: mpsc::Sender<T>) -> Worker<T> {
+    fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Job<T>>>>, sender: mpsc::Sender<(usize, T)>) -> Worker<T> {
         let thread = thread::spawn(move || loop {
             let message = receiver
                 .lock()
@@ -98,7 +98,7 @@ impl<T: std::marker::Send + 'static> Worker<T> {
                     println!("Worker {id} got a job; executing.");
 
                     let job_res = job();
-                    let _ = sender.send(job_res);
+                    let _ = sender.send((id, job_res));
                 }
                 Err(_) => {
                     println!("Worker {id} disconnected; shutting down.");
