@@ -1,7 +1,6 @@
-use std::{fmt::Debug, iter::Zip};
+use std::{fmt::Debug, iter::Zip, ops::{Index, IndexMut, Mul}};
 use crate::position::{Pos, PosIter};
 
-#[derive(Clone)]
 pub struct Matrix<T> {
     rows: Vec<T>,
     row_count: usize,
@@ -76,6 +75,94 @@ impl<T> Matrix<T> {
     pub fn give_pos_mut(&mut self) -> Zip<std::slice::IterMut<'_, T>, PosIter> {
         let width = self.width;
         self.iter_mut().zip(PosIter::new(width))
+    }
+}
+
+impl<T> Index<Pos> for Matrix<T> {
+    type Output = T;
+
+    fn index(&self, index: Pos) -> &Self::Output {
+        self.get(&index).unwrap()
+    }
+}
+
+impl<T> IndexMut<Pos> for Matrix<T> {
+    fn index_mut(&mut self, index: Pos) -> &mut Self::Output {
+        self.get_mut(&index).unwrap()
+    }
+}
+
+impl Mul for Matrix<f64> {
+    type Output = Option<Self>;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        if self.width != rhs.row_count {
+            None
+        } else {
+            let mut rows = Vec::new();
+            for row in 0..self.row_count as i32 {
+                for col in 0..rhs.width() as i32 {
+                    let mut value = 0.0;
+                    for pos in 0..self.width as i32 {
+                        value += self[Pos(row,pos)] * self[Pos(pos,col)];
+                    }
+
+                    rows.push(value);
+                }
+            }
+
+            Some(Matrix::new(rows, rhs.width()))
+        }
+    }
+}
+
+impl<T: Into<f64>> Mul<Matrix<T>> for f64 {
+    type Output = Matrix<f64>;
+
+    fn mul(self, rhs: Matrix<T>) -> Self::Output {
+        let mut rows = Vec::new();
+        for val in rhs.rows {
+            rows.push(val.into() * self);
+        }
+        Matrix::new(rows, rhs.width)
+    }
+}   
+
+impl <T: Clone + PartialOrd> Matrix<T> {
+    pub fn inverse(&self) -> Self {
+        let inverse = self.clone();
+
+        inverse
+    }
+
+    pub fn swap_rows(&mut self, a: i32, b: i32) {
+        for i in 0..self.width() as i32 {
+            let aux = self[Pos(a,i)].clone();
+            self[Pos(a,i)] = self[Pos(b,i)].clone();
+            self[Pos(b,i)] = aux;
+        }
+    }
+}
+
+fn argmax<T: std::cmp::PartialOrd + Clone>(vec: &[T]) -> Option<T> {
+    if !vec.is_empty() {
+        let mut max = &vec[0];
+
+        for val in vec.iter().skip(1) {
+            if max.partial_cmp(val).unwrap() == std::cmp::Ordering::Less {
+                max = val;
+            }
+        }
+
+        Some(max.clone())
+    } else {
+        None
+    }
+}
+
+impl <T: Clone> Clone for Matrix<T> {
+    fn clone(&self) -> Self {
+        Self { rows: self.rows.clone(), row_count: self.row_count, width: self.width }
     }
 }
 
