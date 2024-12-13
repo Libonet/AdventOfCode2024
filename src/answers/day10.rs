@@ -41,17 +41,16 @@ fn find_score(matrix: &Matrix<char>, pos: Pos) -> i32 {
         let num_pos = matrix.get(&pos).unwrap().to_digit(10).unwrap();
 
         for (i, mask) in masks.iter().enumerate() {
-            if let Some(val) = mask.apply(pos, matrix) {
-                if let Some(val) = val.first() {
-                    let num_val = (**val).to_digit(10).unwrap();
+            let values = mask.apply(pos, matrix);
+            if let Some(Some(val)) = values.first() {
+                let num_val = (**val).to_digit(10).unwrap();
 
-                    if num_val > num_pos && num_val.abs_diff(num_pos) == 1 {
-                        let val_pos = pos + Dir::match_num(i);
-                        if num_val == 9 {
-                            trailends.insert(val_pos);
-                        } else {
-                            candidates.push_back(val_pos);
-                        }
+                if num_val > num_pos && num_val.abs_diff(num_pos) == 1 {
+                    let val_pos = pos + Dir::match_num(i);
+                    if num_val == 9 {
+                        trailends.insert(val_pos);
+                    } else {
+                        candidates.push_back(val_pos);
                     }
                 }
             }
@@ -97,13 +96,13 @@ impl Add<Dir> for Pos {
 fn create_masks() -> Vec<Mask> {
     vec![
         // up
-        Mask::new(vec![Pos(-1, 0)], 0, 0),
+        Mask::new(vec![Pos(-1, 0)]),
         // down
-        Mask::new(vec![Pos(1, 0)], 0, 0),
+        Mask::new(vec![Pos(1, 0)]),
         // left
-        Mask::new(vec![Pos(0, -1)], 1, 0),
+        Mask::new(vec![Pos(0, -1)]),
         // right
-        Mask::new(vec![Pos(0, 1)], 0, 1),
+        Mask::new(vec![Pos(0, 1)]),
     ]
 }
 
@@ -144,17 +143,16 @@ fn find_rating(matrix: &Matrix<char>, pos: Pos) -> i32 {
         let num_pos = matrix.get(&pos).unwrap().to_digit(10).unwrap();
 
         for (i, mask) in masks.iter().enumerate() {
-            if let Some(val) = mask.apply(pos, matrix) {
-                if let Some(val) = val.first() {
-                    let num_val = (**val).to_digit(10).unwrap();
+            let values = mask.apply(pos, matrix);
+            if let Some(Some(val)) = values.first() {
+                let num_val = (**val).to_digit(10).unwrap();
 
-                    if num_val > num_pos && num_val.abs_diff(num_pos) == 1 {
-                        let val_pos = pos + Dir::match_num(i);
-                        if num_val == 9 {
-                            trailends.push(val_pos);
-                        } else {
-                            candidates.push_back(val_pos);
-                        }
+                if num_val > num_pos && num_val.abs_diff(num_pos) == 1 {
+                    let val_pos = pos + Dir::match_num(i);
+                    if num_val == 9 {
+                        trailends.push(val_pos);
+                    } else {
+                        candidates.push_back(val_pos);
                     }
                 }
             }

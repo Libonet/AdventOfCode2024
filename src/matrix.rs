@@ -146,29 +146,49 @@ impl Iterator for Matrix {
 
 pub struct Mask {
     relative_pos: Vec<Pos>,
-    left_offset: isize,
-    right_offset: isize,
 }
 
 impl Mask {
-    pub fn new(relative_pos: Vec<Pos>, left_offset: isize, right_offset: isize) -> Self {
+    pub fn new(relative_pos: Vec<Pos>) -> Self {
         Self {
             relative_pos,
-            left_offset,
-            right_offset,
         }
     }
 
-    pub fn apply<'a, T>(&self, pos: Pos, matrix: &'a Matrix<T>) -> Option<Vec<&'a T>> {
-        if pos.1 < self.left_offset as i32 
-           || pos.1 + self.right_offset as i32 >= matrix.width() as i32 {
-            return None;
-        }
-
+    pub fn apply<'a, T>(&self, pos: Pos, matrix: &'a Matrix<T>) -> Vec<Option<&'a T>> {
         self.relative_pos
             .iter()
-            .map(|&i| matrix.get(&(i+pos)))
-            .collect::<Option<Vec<_>>>()
+            .map(|&i| {
+                let rel_pos = i+pos;
+                matrix.get(&rel_pos)
+            })
+            .collect()
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_mask_apply() {
+        let input = "\
+ARA
+RRR
+ARA";
+        let width = 3;
+        let rows = input.replace("\n", "").chars().collect();
+
+        let matrix = Matrix::new(rows, width);
+
+        let mask = Mask::new(vec![Pos(-1,0),Pos(1,0),Pos(0,-1),Pos(0,1),]);
+        for (val, pos) in matrix.give_pos() {
+            let neighbours = mask.apply(pos, &matrix);
+            if pos == Pos(1,1) {
+                assert_eq!(neighbours, vec![matrix.get(&Pos(0,1)),matrix.get(&Pos(2,1)),matrix.get(&Pos(1,0)),matrix.get(&Pos(1,2)),]);
+            }
+
+            println!("neighbours of {val} = {neighbours:?}");
+        }
+    }
+}
