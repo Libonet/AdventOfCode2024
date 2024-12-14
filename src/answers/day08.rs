@@ -27,12 +27,10 @@ fn find_antinodes(matrix: Matrix<char>) -> i32 {
         char_positions.insert(chr, Vec::<Pos>::new());
     }
 
-    let mut ret_matrix = Matrix::with_capacity(matrix.row_count(), matrix.width()); 
+    let mut ret_matrix = Matrix::with_capacity(matrix.row_count(), matrix.width(), '.'); 
 
     let mut pos = Pos(0, 0);
     for mat_entry in &matrix {
-        ret_matrix.push('.');
-
         let vec_ref = char_positions.entry(*mat_entry).or_default();
         vec_ref.push(pos);
         pos.1 += 1;
@@ -93,12 +91,10 @@ fn find_antinodes_harmonics(matrix: Matrix<char>) -> i32 {
         char_positions.insert(chr, Vec::<Pos>::new());
     }
 
-    let mut ret_matrix = Matrix::with_capacity(matrix.row_count(), matrix.width());
+    let mut ret_matrix = Matrix::with_capacity(matrix.row_count(), matrix.width(), '.');
 
     let mut pos = Pos(0, 0);
     for mat_entry in &matrix {
-        ret_matrix.push('.');
-
         let vec_ref = char_positions.entry(*mat_entry).or_default();
         vec_ref.push(pos);
         pos.1 += 1;

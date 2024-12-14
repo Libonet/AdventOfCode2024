@@ -52,14 +52,11 @@ pub fn answer() -> Result<(), io::Error>{
 }
 
 fn part1(matrix: &Input) -> Price {
-    let mut visited = Matrix::with_capacity(matrix.row_count(), matrix.width());
-    for _val in matrix {
-        visited.push(false);
-    }
+    let mut visited = Matrix::with_capacity(matrix.row_count(), matrix.width(), false);
 
     let mut regions: Vec<Region> = Vec::new();
     for (val, pos) in matrix.give_pos() {
-        if !*visited.get_pos(&pos).unwrap() {
+        if !visited.get_pos(&pos).unwrap() {
             region_expansion(matrix, &mut visited, &mut regions, val, &pos);
         }
     }
@@ -120,14 +117,11 @@ fn region_expansion(
 }
 
 fn part2(matrix: &Input) -> Price {
-    let mut visited = Matrix::with_capacity(matrix.row_count(), matrix.width());
-    for _val in matrix {
-        visited.push(false);
-    }
+    let mut visited = Matrix::with_capacity(matrix.row_count(), matrix.width(), false);
 
     let mut regions: Vec<Region> = Vec::new();
     for (val, pos) in matrix.give_pos() {
-        if !*visited.get_pos(&pos).unwrap() {
+        if !visited.get_pos(&pos).unwrap() {
             region_expansion_discounted(matrix, &mut visited, &mut regions, val, &pos);
         }
     }

@@ -14,21 +14,7 @@ impl<T> Matrix<T> {
 
         let row_count = rows.len() / width;
         Self { rows, row_count, width }
-    }
-
-    pub fn with_capacity(row_count: usize, width: usize) -> Self {
-        Self {
-            rows: Vec::with_capacity(row_count*width),
-            row_count,
-            width,
-        }
-    }
-
-    pub fn push(&mut self, value: T) {
-        assert!(self.rows.len() <= self.row_count*self.width);
-
-        self.rows.push(value);
-    }
+    } 
 
     pub fn row_count(&self) -> usize {
         self.row_count
@@ -136,6 +122,29 @@ impl<T> IndexMut<UPos> for Matrix<T> {
 }
 
 
+impl Mul for Matrix<i64> {
+    type Output = Option<Self>;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        if self.width != rhs.row_count {
+            None
+        } else {
+            let mut rows = Vec::new();
+            for row in 0..self.row_count  {
+                for col in 0..rhs.width()  {
+                    let mut value = 0;
+                    for pos in 0..self.width  {
+                        value += self[UPos(row,pos)] * self[UPos(pos,col)];
+                    }
+
+                    rows.push(value);
+                }
+            }
+
+            Some(Matrix::new(rows, rhs.width()))
+        }
+    }
+}
 
 impl Mul for Matrix<f64> {
     type Output = Option<Self>;
@@ -157,6 +166,20 @@ impl Mul for Matrix<f64> {
             }
 
             Some(Matrix::new(rows, rhs.width()))
+        }
+    }
+}
+
+impl<T: Clone> Matrix<T> {
+    pub fn with_capacity(row_count: usize, width: usize, neutral: T) -> Self {
+        let mut rows = Vec::with_capacity(row_count*width);
+        for _i in 0..rows.capacity() {
+            rows.push(neutral.clone());
+        }
+        Self {
+            rows,
+            row_count,
+            width,
         }
     }
 }
@@ -434,14 +457,21 @@ ARA";
 
         let mask = Mask::new(vec![Pos(-1,0),Pos(1,0),Pos(0,-1),Pos(0,1),]);
         for (val, pos) in matrix.give_pos() {
-            let neighbours:Vec<char> = mask.apply(pos, &matrix)
+            let neighbours:Vec<Option<char>> = mask.apply(pos, &matrix)
                 .iter()
-                .map(|v| *v.unwrap())
+                .map(|v| v.as_deref().copied())
                 .collect();
             if pos == Pos(1,1) {
                 assert_eq!(
                     neighbours, 
-                    vec![matrix[UPos(0,1)],matrix[UPos(2,1)],matrix[UPos(1,0)],matrix[UPos(1,2)]]
+                    vec![Some('R'),Some('R'),Some('R'),Some('R')]
+                );
+            }
+
+            if pos == Pos(1,0) {
+                assert_eq!(
+                    neighbours, 
+                    vec![Some('A'),Some('A'),None,Some('R')]
                 );
             }
 
