@@ -201,6 +201,16 @@ impl Scanner {
             _ => None,
         }
     }
+
+    pub fn try_pattern(&mut self, pattern: &str) -> bool {
+        for val in pattern.chars() {
+            if !self.take(&val) {
+                return false;
+            }
+        }
+
+        true
+    }
 }
 
 #[derive(Debug)]

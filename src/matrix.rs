@@ -1,4 +1,4 @@
-use std::{fmt::Debug, iter::Zip, ops::{Index, IndexMut, Mul}};
+use std::{fmt::{Debug, Display}, iter::Zip, ops::{Index, IndexMut, Mul}};
 use crate::position::{Pos, UPos, PosIter, UPosIter};
 
 pub struct Matrix<T> {
@@ -353,12 +353,30 @@ impl <T: Clone> Clone for Matrix<T> {
     }
 }
 
+impl<T: Clone + Display> Display for Matrix<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for i in 0..self.row_count {
+            let start = i*self.width;
+            let row: Vec<T> = self.rows[start..start+self.width].to_vec();
+            for item in row {
+                write!(f, "{item}")?;
+            }
+            writeln!(f)?
+        }
+
+        Ok(())
+    }
+}
+
 impl<T: Debug + Clone> Debug for Matrix<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for i in 0..self.row_count {
             let start = i*self.width;
             let row: Vec<T> = self.rows[start..start+self.width].to_vec();
-            writeln!(f, "{:?}", row)?
+            for item in row {
+                write!(f, "{item:?}")?;
+            }
+            writeln!(f)?
         }
 
         Ok(())
