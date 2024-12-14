@@ -202,7 +202,8 @@ impl Matrix<f64> {
         Self { rows: new_row, row_count: self.row_count, width: self.width - col }
     }
 
-    pub fn gaussian_inverse(&self) -> Option<Self> {
+    /// Doesnt work right now
+    pub fn gauss_jordan_inverse(&self) -> Option<Self> {
         if self.row_count != self.width {
             return None;
         }
@@ -213,6 +214,7 @@ impl Matrix<f64> {
         let mut h = 0; // pivot row
         let mut k = 0; // pivot col
 
+        // get to echelon form
         while h < inverse.row_count && k < inverse.width {
             let row_max = argmax(&inverse, k).unwrap() ;
 
@@ -238,6 +240,22 @@ impl Matrix<f64> {
                 k += 1;
             }
         }
+
+        // do the Jordan part. Start from the end
+        let mut h = self.row_count-1;
+        let mut k = self.width-1;
+
+        while h > 0 && k > 0 {
+            for row in 0..h {
+                let f = -(inverse[UPos(row,k)] / inverse[UPos(h,k)]);
+                inverse.add_rows(row, h, f);
+            }
+
+            h -= 1;
+            k -= 1;
+        }
+
+        println!("whole_matrix =\n{:#?}", inverse);
         
         let inverse = inverse.split_at(self.width);
         Some(inverse)
@@ -432,15 +450,19 @@ ARA";
     }
 
     #[test]
-    fn test_gaussian_inverse() {
+    fn test_gauss_jordan_inverse() {
         let rows = vec![2.,-1.,0.,-1.,2.,-1.,0.,-1.,2.];
         let width = 3;
 
         let matrix = Matrix::new(rows, width);
 
-        let inverse = matrix.gaussian_inverse().unwrap();
+        let inverse = matrix.gauss_jordan_inverse().unwrap();
         println!("inverse = \n{inverse:#?}");
 
-        assert_eq!(inverse.rows, vec![3./4., 1./2., 1./4., 1./2., 1., 1./2., 1./4., 1./2., 3./4.]);
+        let mut diff = 0.0;
+        for (val, upos) in matrix.give_upos() {
+            diff += *val - inverse[upos];
+        }
+        assert!(is_near_zero(&diff));
     }
 }
