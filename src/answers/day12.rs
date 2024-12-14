@@ -59,7 +59,7 @@ fn part1(matrix: &Input) -> Price {
 
     let mut regions: Vec<Region> = Vec::new();
     for (val, pos) in matrix.give_pos() {
-        if !*visited.get(&pos).unwrap() {
+        if !*visited.get_pos(&pos).unwrap() {
             region_expansion(matrix, &mut visited, &mut regions, val, &pos);
         }
     }
@@ -88,8 +88,8 @@ fn region_expansion(
     members.push_back(*pos);
     while !members.is_empty() {
         let curr_pos = members.pop_front().unwrap();
-        if !*visited.get(&curr_pos).unwrap() {
-            *visited.get_mut(&curr_pos).unwrap() = true;
+        if !*visited.get_pos(&curr_pos).unwrap() {
+            *visited.get_mut_pos(&curr_pos).unwrap() = true;
             region.area += 1;
             
             let neighbours = cardinal_mask.apply(curr_pos, matrix);
@@ -127,7 +127,7 @@ fn part2(matrix: &Input) -> Price {
 
     let mut regions: Vec<Region> = Vec::new();
     for (val, pos) in matrix.give_pos() {
-        if !*visited.get(&pos).unwrap() {
+        if !*visited.get_pos(&pos).unwrap() {
             region_expansion_discounted(matrix, &mut visited, &mut regions, val, &pos);
         }
     }
@@ -149,8 +149,8 @@ fn region_expansion_discounted(
     members.push_back(*pos);
     while !members.is_empty() {
         let curr_pos = members.pop_front().unwrap();
-        if !*visited.get(&curr_pos).unwrap() {
-            *visited.get_mut(&curr_pos).unwrap() = true;
+        if !*visited.get_pos(&curr_pos).unwrap() {
+            *visited.get_mut_pos(&curr_pos).unwrap() = true;
             region.area += 1;
             
             let neighbours = cardinal_mask.apply(curr_pos, matrix);

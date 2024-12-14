@@ -1,5 +1,5 @@
 use std::{fmt::Debug, iter::Zip, ops::{Index, IndexMut, Mul}};
-use crate::position::{Pos, PosIter};
+use crate::position::{Pos, UPos, PosIter, UPosIter};
 
 pub struct Matrix<T> {
     rows: Vec<T>,
@@ -38,7 +38,17 @@ impl<T> Matrix<T> {
         self.width
     }
 
-    pub fn get(&self, pos: &Pos) -> Option<&T> {
+    pub fn get(&self, pos: &UPos) -> Option<&T> {
+        let UPos(x,y) = *pos;
+
+        if (0..self.width).contains(&y) && (0..self.row_count).contains(&x) {
+            self.rows.get(x * self.width + y)
+        } else {
+            None
+        }    
+    }
+
+    pub fn get_pos(&self, pos: &Pos) -> Option<&T> {
         let x = pos.0 as usize;
         let y = pos.1 as usize;
 
@@ -49,7 +59,17 @@ impl<T> Matrix<T> {
         }    
     }
 
-    pub fn get_mut(&mut self, pos: &Pos) -> Option<&mut T> {
+    pub fn get_mut(&mut self, pos: &UPos) -> Option<&mut T> {
+        let UPos(x,y) = pos;
+
+        if (0..self.width).contains(y) && (0..self.row_count).contains(x) {
+            self.rows.get_mut(x * self.width + y)
+        } else {
+            None
+        }
+    }
+
+    pub fn get_mut_pos(&mut self, pos: &Pos) -> Option<&mut T> {
         let x = pos.0 as usize;
         let y = pos.1 as usize;
 
@@ -68,6 +88,15 @@ impl<T> Matrix<T> {
         self.rows.iter_mut()
     }
 
+    pub fn give_upos(&self) -> Zip<std::slice::Iter<'_, T>, UPosIter> {
+        self.iter().zip(UPosIter::new(self.width))
+    }
+
+    pub fn give_upos_mut(&mut self) -> Zip<std::slice::IterMut<'_, T>, UPosIter> {
+        let width = self.width;
+        self.iter_mut().zip(UPosIter::new(width))
+    }
+
     pub fn give_pos(&self) -> Zip<std::slice::Iter<'_, T>, PosIter> {
         self.iter().zip(PosIter::new(self.width))
     }
@@ -82,15 +111,31 @@ impl<T> Index<Pos> for Matrix<T> {
     type Output = T;
 
     fn index(&self, index: Pos) -> &Self::Output {
-        self.get(&index).unwrap()
+        self.get_pos(&index).unwrap()
     }
 }
 
 impl<T> IndexMut<Pos> for Matrix<T> {
     fn index_mut(&mut self, index: Pos) -> &mut Self::Output {
+        self.get_mut_pos(&index).unwrap()
+    }
+}
+
+impl<T> Index<UPos> for Matrix<T> {
+    type Output = T;
+
+    fn index(&self, index: UPos) -> &Self::Output {
+        self.get(&index).unwrap()
+    }
+}
+
+impl<T> IndexMut<UPos> for Matrix<T> {
+    fn index_mut(&mut self, index: UPos) -> &mut Self::Output {
         self.get_mut(&index).unwrap()
     }
 }
+
+
 
 impl Mul for Matrix<f64> {
     type Output = Option<Self>;
@@ -100,11 +145,11 @@ impl Mul for Matrix<f64> {
             None
         } else {
             let mut rows = Vec::new();
-            for row in 0..self.row_count as i32 {
-                for col in 0..rhs.width() as i32 {
+            for row in 0..self.row_count  {
+                for col in 0..rhs.width()  {
                     let mut value = 0.0;
-                    for pos in 0..self.width as i32 {
-                        value += self[Pos(row,pos)] * self[Pos(pos,col)];
+                    for pos in 0..self.width  {
+                        value += self[UPos(row,pos)] * self[UPos(pos,col)];
                     }
 
                     rows.push(value);
@@ -128,33 +173,134 @@ impl<T: Into<f64>> Mul<Matrix<T>> for f64 {
     }
 }   
 
-impl <T: Clone + PartialOrd> Matrix<T> {
-    pub fn inverse(&self) -> Self {
-        let inverse = self.clone();
+impl Matrix<f64> {
+    pub fn augment(&self, rhs: Self) -> Self {
+        let mut new_row = Vec::new();
+        for row in 0..self.row_count {
+            for col in 0..self.width {
+                new_row.push(self[UPos(row,col)]);
+            }
+            for col in 0..rhs.width() {
+                new_row.push(rhs[UPos(row,col)]);
+            }
+        }
 
-        inverse
+        Self { rows: new_row, row_count: self.row_count, width: self.width + rhs.width() }
     }
 
-    pub fn swap_rows(&mut self, a: i32, b: i32) {
-        for i in 0..self.width() as i32 {
-            let aux = self[Pos(a,i)].clone();
-            self[Pos(a,i)] = self[Pos(b,i)].clone();
-            self[Pos(b,i)] = aux;
+    pub fn split_at(&self, col: usize) -> Self {
+        let mut new_row = Vec::new();
+
+        for row in 0..self.row_count {
+            for og_col in 0..self.width {
+                if og_col >= col {
+                    new_row.push(self[UPos(row,og_col)]);
+                }
+            }
+        }
+
+        Self { rows: new_row, row_count: self.row_count, width: self.width - col }
+    }
+
+    pub fn gaussian_inverse(&self) -> Option<Self> {
+        if self.row_count != self.width {
+            return None;
+        }
+
+        let mut inverse = self.clone().augment(Matrix::identity(1.0, self.width));
+        println!("inverse_width={}",inverse.width);
+
+        let mut h = 0; // pivot row
+        let mut k = 0; // pivot col
+
+        while h < inverse.row_count && k < inverse.width {
+            let row_max = argmax(&inverse, k).unwrap() ;
+
+            if is_near_zero(&inverse[UPos(row_max,k)]) {
+                // no pivot, pass to next column
+                k += 1;
+            } else {
+                inverse.swap_rows(h,row_max);
+                inverse.mul_row(h, 1./inverse[UPos(h,k)]);
+
+                // do for all rows below pivot:
+                for i in h+1..inverse.row_count {
+                    let f = -(inverse[UPos(i,k)] / inverse[UPos(h,k)]);
+                    // fill with zeros the lower part of pivot column
+                    inverse[UPos(i,k)] = 0.0;
+                    // do for all remaining elements in current row
+                    for j in k+1..inverse.width {
+                        inverse[UPos(i,j)] = inverse[UPos(i,j)] + inverse[UPos(h,j)] * f;
+                    }
+                }
+
+                h += 1;
+                k += 1;
+            }
+        }
+        
+        let inverse = inverse.split_at(self.width);
+        Some(inverse)
+    }
+
+    pub fn identity(val: f64, dimension: usize) -> Matrix<f64> {
+        let mut rows = Vec::new();
+        let width = dimension;
+        
+        for row in 0..width {
+            for col in 0..width {
+                if row==col {
+                    rows.push(val);
+                } else {
+                    rows.push(0.0);
+                }
+            }
+        }
+
+        Matrix::new(rows, width)
+    }
+
+    pub fn swap_rows(&mut self, a: usize, b: usize) {
+        for i in 0..self.width()  {
+            let aux = self[UPos(a,i)];
+            self[UPos(a,i)] = self[UPos(b,i)];
+            self[UPos(b,i)] = aux;
+        }
+    }
+
+    pub fn add_rows(&mut self, a: usize, b: usize, k: f64) {
+        for i in 0..self.width()  {
+            let val = self[UPos(b,i)] * k;
+            self[UPos(a,i)] += val;
+        }
+    }
+
+    pub fn mul_row(&mut self, a: usize, val: f64) {
+        for i in 0..self.width()  {
+            self[UPos(a,i)] *= val;
         }
     }
 }
 
-fn argmax<T: std::cmp::PartialOrd + Clone>(vec: &[T]) -> Option<T> {
-    if !vec.is_empty() {
-        let mut max = &vec[0];
+fn is_near_zero(val: &f64) -> bool {
+    *val <= 1e-3
+}
 
-        for val in vec.iter().skip(1) {
-            if max.partial_cmp(val).unwrap() == std::cmp::Ordering::Less {
-                max = val;
+fn argmax<T: std::cmp::PartialOrd + Clone>(matrix: &Matrix<T>, col: usize) -> Option<usize> {
+    if matrix.row_count() > 0 && col < matrix.width() {
+        let column = col ;
+        let mut max_row: usize = 0;
+        let mut max_val = matrix[UPos(max_row,column)].clone();
+
+        for row in 1..matrix.row_count()  {
+            let val = matrix[UPos(row,column)].clone();
+            if max_val.partial_cmp(&val).unwrap() == std::cmp::Ordering::Less {
+                max_row = row;
+                max_val = val;
             }
         }
 
-        Some(max.clone())
+        Some(max_row)
     } else {
         None
     }
@@ -247,7 +393,7 @@ impl Mask {
             .iter()
             .map(|&i| {
                 let rel_pos = i+pos;
-                matrix.get(&rel_pos)
+                matrix.get_pos(&rel_pos)
             })
             .collect()
     }
@@ -270,12 +416,31 @@ ARA";
 
         let mask = Mask::new(vec![Pos(-1,0),Pos(1,0),Pos(0,-1),Pos(0,1),]);
         for (val, pos) in matrix.give_pos() {
-            let neighbours = mask.apply(pos, &matrix);
+            let neighbours:Vec<char> = mask.apply(pos, &matrix)
+                .iter()
+                .map(|v| *v.unwrap())
+                .collect();
             if pos == Pos(1,1) {
-                assert_eq!(neighbours, vec![matrix.get(&Pos(0,1)),matrix.get(&Pos(2,1)),matrix.get(&Pos(1,0)),matrix.get(&Pos(1,2)),]);
+                assert_eq!(
+                    neighbours, 
+                    vec![matrix[UPos(0,1)],matrix[UPos(2,1)],matrix[UPos(1,0)],matrix[UPos(1,2)]]
+                );
             }
 
             println!("neighbours of {val} = {neighbours:?}");
         }
+    }
+
+    #[test]
+    fn test_gaussian_inverse() {
+        let rows = vec![2.,-1.,0.,-1.,2.,-1.,0.,-1.,2.];
+        let width = 3;
+
+        let matrix = Matrix::new(rows, width);
+
+        let inverse = matrix.gaussian_inverse().unwrap();
+        println!("inverse = \n{inverse:#?}");
+
+        assert_eq!(inverse.rows, vec![3./4., 1./2., 1./4., 1./2., 1., 1./2., 1./4., 1./2., 3./4.]);
     }
 }

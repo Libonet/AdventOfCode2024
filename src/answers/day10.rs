@@ -38,7 +38,7 @@ fn find_score(matrix: &Matrix<char>, pos: Pos) -> i32 {
 
     while !candidates.is_empty() {
         let pos = candidates.pop_front().unwrap();
-        let num_pos = matrix.get(&pos).unwrap().to_digit(10).unwrap();
+        let num_pos = matrix.get_pos(&pos).unwrap().to_digit(10).unwrap();
 
         for (i, mask) in masks.iter().enumerate() {
             let values = mask.apply(pos, matrix);
@@ -140,7 +140,7 @@ fn find_rating(matrix: &Matrix<char>, pos: Pos) -> i32 {
 
     while !candidates.is_empty() {
         let pos = candidates.pop_front().unwrap();
-        let num_pos = matrix.get(&pos).unwrap().to_digit(10).unwrap();
+        let num_pos = matrix.get_pos(&pos).unwrap().to_digit(10).unwrap();
 
         for (i, mask) in masks.iter().enumerate() {
             let values = mask.apply(pos, matrix);

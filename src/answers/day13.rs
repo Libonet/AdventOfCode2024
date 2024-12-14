@@ -79,7 +79,8 @@ fn solve_2by2<T: Into<i128> + Copy>(matrix: &Matrix<T>, offset: i128) -> Option<
 
 fn parse(contents: &str) -> Input {
     let mut ret = Input::new();
-    let mut scanner = Scanner::new(contents);
+    let contents = contents.replace("\n", "");
+    let mut scanner = Scanner::new(&contents);
     
     while !scanner.is_done() {
         while let Some(val) = scanner.pop() {
@@ -87,12 +88,7 @@ fn parse(contents: &str) -> Input {
                 break;
             }
         }
-        let ax;
-        if let Some(val) = scanner.try_u32(){
-            ax = val as i128;
-        } else {
-            return ret;
-        }
+        let ax = scanner.try_u32().unwrap() as i128;
 
         while let Some(val) = scanner.pop() {
             if *val == '+' {

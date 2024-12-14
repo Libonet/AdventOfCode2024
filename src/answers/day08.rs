@@ -51,10 +51,10 @@ fn find_antinodes(matrix: Matrix<char>) -> i32 {
             for end in positions.iter().skip(i+1) {
                 let offset = *end - start;
 
-                if let Some(entry) = ret_matrix.get_mut(&(start-offset)) {
+                if let Some(entry) = ret_matrix.get_mut_pos(&(start-offset)) {
                     *entry = '$';
                 }
-                if let Some(entry) = ret_matrix.get_mut(&(*end+offset)) {
+                if let Some(entry) = ret_matrix.get_mut_pos(&(*end+offset)) {
                     *entry = '$';
                 }
             }
@@ -119,12 +119,12 @@ fn find_antinodes_harmonics(matrix: Matrix<char>) -> i32 {
                     let offset = *end - start;
 
                     let mut times = 0;
-                    while let Some(entry) = ret_matrix.get_mut(&(start+(offset*times))) {
+                    while let Some(entry) = ret_matrix.get_mut_pos(&(start+(offset*times))) {
                         *entry = '$';
                         times += 1;
                     }
                     let mut times = 1;
-                    while let Some(entry) = ret_matrix.get_mut(&(start-(offset*times))) {
+                    while let Some(entry) = ret_matrix.get_mut_pos(&(start-(offset*times))) {
                         *entry = '$';
                         times += 1;
                     }
