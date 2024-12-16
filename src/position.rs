@@ -33,6 +33,12 @@ impl Mul<i32> for Pos {
     }
 }
 
+impl From<UPos> for Pos {
+    fn from(value: UPos) -> Self {
+        Pos(value.0 as i32, value.1 as i32)
+    }
+}
+
 pub struct PosIter {
     pos: Pos,
     width: usize,
@@ -98,6 +104,21 @@ impl Mul<usize> for UPos {
 
     fn mul(self, rhs: usize) -> Self::Output {
         Self (self.0 * rhs, self.1 * rhs)
+    }
+}
+
+impl TryFrom<Pos> for UPos {
+    type Error = &'static str;
+
+    fn try_from(value: Pos) -> Result<Self, Self::Error> {
+        let Pos(x,y) = value;
+        if x < 0 {
+            Err("Invalid Pos. x should be greater or equal than 0")
+        } else if y < 0 {
+            Err("Invalid Pos. y should be greater or equal than 0")
+        } else {
+            Ok(UPos(x as usize,y as usize))
+        }
     }
 }
 
