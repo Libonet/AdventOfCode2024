@@ -1,4 +1,5 @@
-use std::{fs::read_to_string, io};
+use core::time;
+use std::{fs::read_to_string, io, thread::sleep};
 
 use crate::{matrix::Matrix, position::{Pos, UPos}};
 
@@ -90,11 +91,20 @@ fn calculate_costs(map: &Matrix<char>) -> Cost {
         .sum()
 }
 
+#[cfg(debug_assertions)]
+const WAIT_TIME: u64 = 32;
+
 fn part2(contents: &Input) -> Cost {
     let mut robot_pos = contents.0;
     let mut map = contents.1.clone();
     let moves = &contents.2;
 
+    #[cfg(debug_assertions)]
+    {
+        println!("{map}");
+        sleep(time::Duration::from_millis(WAIT_TIME));
+        print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
+    }
     for dir in moves {
         let next_pos = look_ahead(&robot_pos, dir);
         if let Some(pos) = next_pos {
@@ -102,6 +112,12 @@ fn part2(contents: &Input) -> Cost {
                 move_wide(&robot_pos, &mut map, dir);
                 robot_pos = pos;
             }
+        }
+        #[cfg(debug_assertions)]
+        {
+            println!("{map}");
+            sleep(time::Duration::from_millis(WAIT_TIME));
+            print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
         }
     }
 

@@ -1,6 +1,6 @@
 use std::ops::{Mul, Add, Sub};
 
-#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
+#[derive(Default, Debug, Clone, Copy, Hash, Eq, PartialEq)]
 pub struct Pos (pub i32, pub i32);
 
 impl Pos {
@@ -74,7 +74,7 @@ impl Iterator for PosIter {
     }
 }
 
-#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
+#[derive(Default, Debug, Clone, Copy, Hash, Eq, PartialEq)]
 pub struct UPos(pub usize, pub usize);
 
 impl UPos {
@@ -157,3 +157,35 @@ impl Iterator for UPosIter {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum Dir {
+    Up,
+    Down,
+    Left,
+    Right,
+}
+
+impl From<Dir> for Pos {
+    fn from(value: Dir) -> Self {
+        match value {
+            Dir::Up => Pos(-1,0),
+            Dir::Down => Pos(1,0),
+            Dir::Left => Pos(0,-1),
+            Dir::Right => Pos(0,1),
+        }
+    }
+}
+
+impl TryFrom<Pos> for Dir {
+    type Error = &'static str;
+
+    fn try_from(value: Pos) -> Result<Self, Self::Error> {
+        match value {
+            Pos(-1,0) => Ok(Dir::Up),
+            Pos(1,0) => Ok(Dir::Down),
+            Pos(0,-1) => Ok(Dir::Left),
+            Pos(0,1) => Ok(Dir::Right),
+            _ => Err("Invalid Pos"),
+        }
+    }
+}

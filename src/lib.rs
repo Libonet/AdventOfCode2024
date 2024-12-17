@@ -4,4 +4,5 @@ pub mod matrix;
 pub mod scanner;
 pub mod thread_pool;
 pub mod position;
+pub mod debug_print;
 
