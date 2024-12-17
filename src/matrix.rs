@@ -1,5 +1,21 @@
-use std::{fmt::{Debug, Display}, iter::Zip, ops::{Index, IndexMut, Mul}};
-use crate::position::{Pos, UPos, PosIter, UPosIter};
+use std::{collections::{HashSet, VecDeque}, fmt::{Debug, Display}, iter::Zip, ops::{Index, IndexMut, Mul}};
+use crate::position::{Pos, UPos, PosIter, UPosIter, Dir};
+
+#[derive(Debug, Clone, Copy)]
+struct AStarCell {
+    parent: Option<UPos>,
+    f: usize,
+    g: usize,
+    h: usize,
+}
+
+impl AStarCell {
+    fn new() -> Self {
+        Self { parent: None, f: usize::MAX, g: usize::MAX, h: usize::MAX }
+    }
+}
+
+type AStarPair = (usize, UPos);
 
 pub struct Matrix<T> {
     rows: Vec<T>,
@@ -7,6 +23,7 @@ pub struct Matrix<T> {
     width: usize,
 }
 
+type Cost = u32;
 impl<T> Matrix<T> {
     pub fn new(rows: Vec<T>, width: usize) -> Self {
         assert!(!rows.is_empty());
@@ -65,6 +82,20 @@ impl<T> Matrix<T> {
             None
         }
     }
+    
+    pub fn look_ahead(&self, upos: &UPos, dir: &Dir) -> Option<(&T, Pos)> {
+        let offset = Pos::from(*upos) + Pos::from(*dir);
+        let val = self.get_pos(&offset)?;
+
+        Some((val, offset))
+    }
+
+    pub fn look_ahead_mut(&mut self, upos: &UPos, dir: &Dir) -> Option<(&mut T, Pos)> {
+        let offset = Pos::from(*upos) + Pos::from(*dir);
+        let val = self.get_mut_pos(&offset)?;
+
+        Some((val, offset))
+    }
 
     pub fn iter(&self) -> std::slice::Iter<'_, T> {
         self.rows.iter()
@@ -90,6 +121,73 @@ impl<T> Matrix<T> {
     pub fn give_pos_mut(&mut self) -> Zip<std::slice::IterMut<'_, T>, PosIter> {
         let width = self.width;
         self.iter_mut().zip(PosIter::new(width))
+    }
+
+    pub fn manhattan_distance(start: &UPos, end: &UPos) -> usize {
+        start.0.abs_diff(end.0) + start.1.abs_diff(end.1)
+    }
+
+    /// Incomplete right now
+    pub fn a_star(&self, start: UPos, end: UPos) -> Option<(Vec<UPos>, Cost)> {
+        if self.get(&start).is_none() {
+            eprintln!("{start:?} is not a valid position");
+            return None;
+        }
+
+        if self.get(&end).is_none() {
+            eprintln!("{end:?} is not a valid position");
+            return None;
+        }
+
+        let mut cost = 0;
+        let mut path = Vec::new();
+
+        if start == end {
+            return Some((path, cost));
+        } 
+
+        let mut closed = Matrix::with_capacity(self.row_count, self.width, false);
+        let mut cell_details = Matrix::with_capacity(self.row_count, self.width, AStarCell::new());
+
+        // initialize 
+        cell_details[start].parent = Some(start);
+        cell_details[start].f = 0;
+        cell_details[start].g = 0;
+        cell_details[start].h = 0;
+
+        let mut open: VecDeque<AStarPair> = VecDeque::new();
+        let mut open_set: HashSet<AStarPair> = HashSet::new();
+
+        let first: AStarPair = (0, start);
+        open.push_back(first);
+        open_set.insert(first);
+
+        let mut found_dest = false;
+
+        let card_dir = Mask::new(vec![Pos(-1,0),Pos(1,0),Pos(0,-1),Pos(0,1)]);
+        while !open.is_empty() {
+            let p@(_f,pos): AStarPair = open.pop_front()?;
+            open_set.remove(&p);
+
+            closed[pos] = true;
+
+            // Now we check the 4 cardinal directions:
+            // .  N   .
+            // W cell E
+            // .  S   .
+
+            let (g_new, h_new, f_new): (usize, usize, usize);
+
+            let dirs = card_dir.apply_upos(pos, &cell_details);
+
+            for dir in dirs {
+                if let Some(cell) = dir {
+                    
+                }
+            }
+        }
+
+        Some((path, cost))
     }
 }
 
@@ -118,55 +216,6 @@ impl<T> Index<UPos> for Matrix<T> {
 impl<T> IndexMut<UPos> for Matrix<T> {
     fn index_mut(&mut self, index: UPos) -> &mut Self::Output {
         self.get_mut(&index).unwrap()
-    }
-}
-
-
-impl Mul for Matrix<i64> {
-    type Output = Option<Self>;
-
-    fn mul(self, rhs: Self) -> Self::Output {
-        if self.width != rhs.row_count {
-            None
-        } else {
-            let mut rows = Vec::new();
-            for row in 0..self.row_count  {
-                for col in 0..rhs.width()  {
-                    let mut value = 0;
-                    for pos in 0..self.width  {
-                        value += self[UPos(row,pos)] * self[UPos(pos,col)];
-                    }
-
-                    rows.push(value);
-                }
-            }
-
-            Some(Matrix::new(rows, rhs.width()))
-        }
-    }
-}
-
-impl Mul for Matrix<f64> {
-    type Output = Option<Self>;
-
-    fn mul(self, rhs: Self) -> Self::Output {
-        if self.width != rhs.row_count {
-            None
-        } else {
-            let mut rows = Vec::new();
-            for row in 0..self.row_count  {
-                for col in 0..rhs.width()  {
-                    let mut value = 0.0;
-                    for pos in 0..self.width  {
-                        value += self[UPos(row,pos)] * self[UPos(pos,col)];
-                    }
-
-                    rows.push(value);
-                }
-            }
-
-            Some(Matrix::new(rows, rhs.width()))
-        }
     }
 }
 
@@ -225,7 +274,6 @@ impl Matrix<f64> {
         Self { rows: new_row, row_count: self.row_count, width: self.width - col }
     }
 
-    /// Doesnt work right now
     pub fn gauss_jordan_inverse(&self) -> Option<Self> {
         if self.row_count != self.width {
             return None;
@@ -347,6 +395,55 @@ fn argmax<T: std::cmp::PartialOrd + Clone>(matrix: &Matrix<T>, col: usize) -> Op
     }
 }
 
+
+impl Mul for Matrix<i64> {
+    type Output = Option<Self>;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        if self.width != rhs.row_count {
+            None
+        } else {
+            let mut rows = Vec::new();
+            for row in 0..self.row_count  {
+                for col in 0..rhs.width()  {
+                    let mut value = 0;
+                    for pos in 0..self.width  {
+                        value += self[UPos(row,pos)] * self[UPos(pos,col)];
+                    }
+
+                    rows.push(value);
+                }
+            }
+
+            Some(Matrix::new(rows, rhs.width()))
+        }
+    }
+}
+
+impl Mul for Matrix<f64> {
+    type Output = Option<Self>;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        if self.width != rhs.row_count {
+            None
+        } else {
+            let mut rows = Vec::new();
+            for row in 0..self.row_count  {
+                for col in 0..rhs.width()  {
+                    let mut value = 0.0;
+                    for pos in 0..self.width  {
+                        value += self[UPos(row,pos)] * self[UPos(pos,col)];
+                    }
+
+                    rows.push(value);
+                }
+            }
+
+            Some(Matrix::new(rows, rhs.width()))
+        }
+    }
+}
+
 impl <T: Clone> Clone for Matrix<T> {
     fn clone(&self) -> Self {
         Self { rows: self.rows.clone(), row_count: self.row_count, width: self.width }
@@ -452,6 +549,16 @@ impl Mask {
             .iter()
             .map(|&i| {
                 let rel_pos = i+pos;
+                matrix.get_pos(&rel_pos)
+            })
+            .collect()
+    }
+
+    pub fn apply_upos<'a, T>(&self, upos: UPos, matrix: &'a Matrix<T>) -> Vec<Option<&'a T>> {
+        self.relative_pos
+            .iter()
+            .map(|&i| {
+                let rel_pos = i+Pos::from(upos);
                 matrix.get_pos(&rel_pos)
             })
             .collect()
