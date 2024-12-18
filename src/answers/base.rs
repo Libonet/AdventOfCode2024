@@ -1,4 +1,5 @@
 use std::{fs::read_to_string, io};
+use std::time::Instant;
 
 type Input = String;
 
@@ -8,12 +9,18 @@ pub fn answer() -> Result<(), io::Error>{
     let input = parse(contents);
     
     println!("Part1:");
+    let now = Instant::now();
     let part1_res = part1(&input);
+    let elapsed = now.elapsed();
     println!("result = {part1_res}");
+    println!("Time taken: {:.2?}", elapsed);
 
     println!("Part2:");
+    let now = Instant::now();
     let part2_res = part2(&input);
-    println!("result = {part2_res}");
+    let elapsed = now.elapsed();
+    println!("result = {part2_res:?}");
+    println!("Time taken: {:.2?}", elapsed);
 
     Ok(())
 }

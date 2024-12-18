@@ -1,7 +1,5 @@
-use std::cmp::Ordering;
-use std::collections::{BinaryHeap, HashSet};
-use std::thread::sleep;
-use std::time::Duration;
+use std::collections::BinaryHeap;
+use std::time::Instant;
 use std::{fs::read_to_string, io};
 
 use crate::matrix::Matrix;
@@ -16,12 +14,18 @@ pub fn answer() -> Result<(), io::Error>{
     let input = parse(contents);
     
     println!("Part1:");
+    let now = Instant::now();
     let part1_res = part1(&input);
+    let elapsed = now.elapsed();
     println!("result = {part1_res}");
+    println!("Time taken: {:.2?}", elapsed);
 
     println!("Part2:");
+    let now = Instant::now();
     let part2_res = part2(&input);
+    let elapsed = now.elapsed();
     println!("result = {part2_res:?}");
+    println!("Time taken: {:.2?}", elapsed);
 
     Ok(())
 }
@@ -67,9 +71,6 @@ fn simulate_drops(map: &mut Matrix<char>, drops: &Input, size: usize) {
     for upos in drops.iter().take(size) {
         map[*upos] = '#';
     }
-
-    println!("map = ");
-    println!("{map}");
 }
 
 type Cost = u32;
@@ -169,19 +170,30 @@ fn part2(input: &Input) -> (usize, usize) {
     let start = UPos(0,0);
     let end = UPos(70,70);
 
-    let mut map = Matrix::with_capacity(71, 71, '.');
+    let map = Matrix::with_capacity(71, 71, '.');
 
-    simulate_drops(&mut map, input, 1024);
+    // binary search the last moment we could reach the end
 
+    let mut l = 1025;
+    let mut r = input.len();
 
-    for upos in input.iter().skip(1024) {
-        map[*upos] = '#';
-        let (_cost_map, paths) = homemade_dijkstra(&mut map, start, end);
+    let mut m = (r + l) / 2;
+
+    while l != m {
+        let mut clone = map.clone();
+        simulate_drops(&mut clone, input, m);
+
+        let (_cost_map, paths) = homemade_dijkstra(&mut clone, start, end);
 
         if paths.is_empty() {
-            return (upos.1, upos.0);
+            r = m-1;
+        } else {
+            l = m+1;
         }
+
+        m = (r + l) / 2;        
     }
 
-    (0,0)
+    let last = input[m+1];
+    (last.1, last.0)
 }
