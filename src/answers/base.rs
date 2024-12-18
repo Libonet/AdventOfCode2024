@@ -18,18 +18,18 @@ pub fn answer() -> Result<(), io::Error>{
     Ok(())
 }
 
-fn part1(contents: &Input) -> i32 {
-    let result = 0; // so rust shuts up
-
-    result
-}
-
-fn part2(contents: &Input) -> i32 {
-    let result = 0; // so rust shuts up
-
-    result
-}
-
 fn parse(contents: String) -> Input {
     contents
+}
+
+fn part1(input: &Input) -> i32 {
+    let result = 0; // so rust shuts up
+
+    result
+}
+
+fn part2(input: &Input) -> i32 {
+    let result = 0; // so rust shuts up
+
+    result
 }

@@ -165,6 +165,16 @@ pub enum Dir {
     Right,
 }
 
+impl Dir {
+    pub fn opposite(&self, rhs: &Self) -> bool {
+        matches!((self, rhs), 
+            (Dir::Up, Dir::Down) |
+            (Dir::Down, Dir::Up) |
+            (Dir::Left, Dir::Right) |
+            (Dir::Right, Dir::Left))
+    }
+}
+
 impl From<Dir> for Pos {
     fn from(value: Dir) -> Self {
         match value {

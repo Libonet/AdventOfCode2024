@@ -220,6 +220,7 @@ impl<T> IndexMut<UPos> for Matrix<T> {
 }
 
 impl<T: Clone> Matrix<T> {
+    /// Create a Matrix with given size, filled with a 'neutral' value
     pub fn with_capacity(row_count: usize, width: usize, neutral: T) -> Self {
         let mut rows = Vec::with_capacity(row_count*width);
         for _i in 0..rows.capacity() {
