@@ -1,4 +1,4 @@
-use std::ops::{Mul, Add, Sub};
+use std::{fmt::Display, ops::{Add, Mul, Sub}};
 
 #[derive(Default, Debug, Clone, Copy, Hash, Eq, PartialEq)]
 pub struct Pos (pub i32, pub i32);
@@ -196,6 +196,17 @@ impl TryFrom<Pos> for Dir {
             Pos(0,-1) => Ok(Dir::Left),
             Pos(0,1) => Ok(Dir::Right),
             _ => Err("Invalid Pos"),
+        }
+    }
+}
+
+impl Display for Dir {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Dir::Up => write!(f, "Up"),
+            Dir::Down => write!(f, "Down"),
+            Dir::Left => write!(f, "Left"),
+            Dir::Right => write!(f, "Right"),
         }
     }
 }

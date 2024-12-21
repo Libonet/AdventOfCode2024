@@ -150,10 +150,10 @@ fn homemade_dijkstra(map: &mut Matrix<char>, start: UPos, end: UPos) -> (Matrix<
                     next_cell.cost = dir_cost;
 
                     let mut new_path = (curr_status.path).clone();
-                    new_path.push(next_pos.try_into().unwrap());
+                    new_path.push(next_pos);
                     let next_status = Status { 
                         cost: dir_cost,
-                        pos: next_pos.try_into().unwrap(),
+                        pos: next_pos,
                         dir: *dir,
                         path: new_path,    
                     };

@@ -103,10 +103,10 @@ fn homemade_dijkstra(input: Input) -> (Matrix<CellInfo>, HashSet<UPos>) {
                         next_cell.cost = dir_cost;
 
                         let mut new_path = (curr_status.path).clone();
-                        new_path.push(next_pos.try_into().unwrap());
+                        new_path.push(next_pos);
                         let next_status = Status { 
                             cost: dir_cost,
-                            pos: next_pos.try_into().unwrap(),
+                            pos: next_pos,
                             dir: *dir,
                             path: new_path,    
                         };
@@ -118,10 +118,10 @@ fn homemade_dijkstra(input: Input) -> (Matrix<CellInfo>, HashSet<UPos>) {
                         match turning_point.cmp(&dir_cost) {
                             Ordering::Greater | Ordering::Equal => {
                                 let mut new_path = (curr_status.path).clone();
-                                new_path.push(next_pos.try_into().unwrap());
+                                new_path.push(next_pos);
                                 let next_status = Status {
                                     cost: dir_cost,
-                                    pos: next_pos.try_into().unwrap(),
+                                    pos: next_pos,
                                     dir: *dir,
                                     path: new_path,
                                 };

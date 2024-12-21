@@ -83,17 +83,21 @@ impl<T> Matrix<T> {
         }
     }
     
-    pub fn look_ahead(&self, upos: &UPos, dir: &Dir) -> Option<(&T, Pos)> {
+    pub fn look_ahead(&self, upos: &UPos, dir: &Dir) -> Option<(&T, UPos)> {
         let offset = Pos::from(*upos) + Pos::from(*dir);
         let val = self.get_pos(&offset)?;
 
+        // We know it's a valid UPos because it's inside the matrix
+        let offset = offset.try_into().unwrap();
         Some((val, offset))
     }
 
-    pub fn look_ahead_mut(&mut self, upos: &UPos, dir: &Dir) -> Option<(&mut T, Pos)> {
+    pub fn look_ahead_mut(&mut self, upos: &UPos, dir: &Dir) -> Option<(&mut T, UPos)> {
         let offset = Pos::from(*upos) + Pos::from(*dir);
         let val = self.get_mut_pos(&offset)?;
 
+        // We know it's a valid UPos because it's inside the matrix
+        let offset = offset.try_into().unwrap();
         Some((val, offset))
     }
 
@@ -121,10 +125,6 @@ impl<T> Matrix<T> {
     pub fn give_pos_mut(&mut self) -> Zip<std::slice::IterMut<'_, T>, PosIter> {
         let width = self.width;
         self.iter_mut().zip(PosIter::new(width))
-    }
-
-    pub fn manhattan_distance(start: &UPos, end: &UPos) -> usize {
-        start.0.abs_diff(end.0) + start.1.abs_diff(end.1)
     }
 
     /// Incomplete right now
@@ -370,6 +370,10 @@ impl Matrix<f64> {
             self[UPos(a,i)] *= val;
         }
     }
+}
+
+pub fn manhattan_distance(start: &UPos, end: &UPos) -> usize {
+    start.0.abs_diff(end.0) + start.1.abs_diff(end.1)
 }
 
 fn is_near_zero(val: &f64) -> bool {
