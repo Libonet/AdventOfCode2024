@@ -41,10 +41,10 @@ impl<T> Matrix<T> {
         self.width
     }
 
-    pub fn get(&self, pos: &UPos) -> Option<&T> {
-        let UPos(x,y) = *pos;
+    pub fn get(&self, upos: &UPos) -> Option<&T> {
+        let UPos(x,y) = *upos;
 
-        if (0..self.width).contains(&y) && (0..self.row_count).contains(&x) {
+        if (0..self.width).contains(&y) {
             self.rows.get(x * self.width + y)
         } else {
             None
@@ -62,10 +62,10 @@ impl<T> Matrix<T> {
         }    
     }
 
-    pub fn get_mut(&mut self, pos: &UPos) -> Option<&mut T> {
-        let UPos(x,y) = pos;
+    pub fn get_mut(&mut self, upos: &UPos) -> Option<&mut T> {
+        let UPos(x,y) = upos;
 
-        if (0..self.width).contains(y) && (0..self.row_count).contains(x) {
+        if (0..self.width).contains(y) {
             self.rows.get_mut(x * self.width + y)
         } else {
             None

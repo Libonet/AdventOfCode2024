@@ -39,6 +39,8 @@ fn main() {
         18 => get_answer(18, answers::day18::answer),
         19 => get_answer(19, answers::day19::answer),
         20 => get_answer(20, answers::day20::answer),
+        21 => get_answer(21, answers::day21::answer),
+        22 => get_answer(22, answers::day22::answer),
         _ => {
             eprintln!("Error: Day should exist");
             exit(2);
