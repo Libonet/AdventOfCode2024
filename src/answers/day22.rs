@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::{fs::read_to_string, io};
 use std::time::Instant;
 
@@ -81,15 +81,63 @@ fn part2(input: &Input) -> Bananas {
     let mut sum = 0;
     let mut cache: HashMap<Secret, Secret> = HashMap::new();
     
+    let mut all_best_values = Vec::new();
     for val in input.lines().map(|line| line.parse::<Secret>().expect("should be number")) {
+        let mut found_changes: HashSet<(i16,i16,i16,i16)> = HashSet::new();
+        let mut best_value = HashMap::new();
+        let mut timeline = Vec::with_capacity(2000);
         let mut next = val;
+        let mut prev_digit = get_digit(val);
+
         for _i in 0..2000 {
             next = evolve_number(&mut cache, next);
+            let curr_digit = get_digit(next);
+            let diff = curr_digit as i16 - prev_digit as i16;
+            timeline.push((curr_digit, diff));
+            prev_digit = curr_digit;
         }
-        sum += next;
+
+        let (_v1,mut d1) = timeline[0];
+        let (_v2,mut d2) = timeline[1];
+        let (_v3,mut d3) = timeline[2];
+        for (v4,d4) in timeline.into_iter().skip(3) {
+            if !found_changes.contains(&(d1,d2,d3,d4)) {
+                best_value.insert((d1,d2,d3,d4), v4);
+                found_changes.insert((d1,d2,d3,d4));
+            }
+
+            d1 = d2;
+            d2 = d3;
+            d3 = d4;
+        }
+
+        all_best_values.push(best_value);
     }
 
-    sum
+    let mut max: Bananas = 0;
+    for d1 in -9..=9 {
+        for d2 in -9..=9 {
+            for d3 in -9..=9 {
+                for d4 in -9..=9 {
+                    let mut inner_sum: Bananas = 0;
+                    for best_values in all_best_values.iter() {
+                        if let Some(val) = best_values.get(&(d1,d2,d3,d4)) {
+                            inner_sum += *val as Bananas;
+                        }
+                    }
+                    if inner_sum > max {
+                        max = inner_sum;
+                    }
+                }
+            }
+        }
+    }
+
+    max
+}
+
+fn get_digit(secret: Secret) -> u8 {
+    (secret % 10) as u8
 }
 
 #[cfg(test)]
