@@ -52,6 +52,27 @@ impl Scanner {
         }
     }
 
+    /// pop n times and advance the cursor.
+    /// if we reach the end, we still return something
+    pub fn popn(&mut self, times: usize) -> Option<String> {
+        let mut times = times;
+        let start = self.cursor;
+        while times > 0 {
+            let res = self.pop();
+            if res.is_none() {
+                break;
+            }
+
+            times -= 1;
+        }
+        let end = self.cursor;
+        if start == end {
+            None
+        } else {
+            Some(self.characters[start..end].iter().collect())
+        }
+    }
+
     /// return true if chars[cursor] == target and advance the cursor 
     pub fn take(&mut self, target: &char) -> bool {
         match self.characters.get(self.cursor) {
