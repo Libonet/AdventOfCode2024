@@ -440,7 +440,7 @@ impl Keypad {
         self.memo = HashMap::new();
 
         for robot in 1..=n_robots {
-            println!("caching robot {robot}");
+            //println!("caching robot {robot}");
             self.cache_robot(robot);
         }
     }
@@ -452,12 +452,12 @@ impl Keypad {
                 if key_start == ' ' || key_end == ' ' {
                     continue;
                 }
-                println!("keys: {key_start}, {key_end}");
+                //println!("keys: {key_start}, {key_end}");
                 let transition = self.get_transition(key_start, key_end);
-                println!("transition: {transition:?}");
+                //println!("transition: {transition:?}");
 
                 let cost = self.transition_cost(robot - 1, transition);
-                println!("cost = {cost}");
+                //println!("cost = {cost}");
 
                 insert_list.push((key_start, key_end, cost));
             }

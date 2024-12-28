@@ -1,8 +1,8 @@
-use std::{io, process::exit};
+use std::{io, process::exit, time::Instant};
 use advent_of_code2024::answers;
 
 fn main() {
-    println!("Input the day to get the day's answer.");
+    println!("Input the day to get the day's answer. (0 for all)");
 
     let stdin = io::stdin();
 
@@ -18,6 +18,19 @@ fn main() {
         }
     };
 
+    if num != 0 {
+        get_day(num);
+    } else {
+        let now = Instant::now();
+        for day in 1..=25 {
+            get_day(day);
+        }
+        let elapsed = now.elapsed();
+        println!("Time taken for all days: {elapsed:?}");
+    }
+}
+
+fn get_day(num: i32) {
     match num {
         1 => get_answer(1, answers::day01::answer),
         2 => get_answer(2, answers::day02::answer),
@@ -43,6 +56,7 @@ fn main() {
         22 => get_answer(22, answers::day22::answer),
         23 => get_answer(23, answers::day23::answer),
         24 => get_answer(24, answers::day24::answer),
+        25 => get_answer(25, answers::day25::answer),
         _ => {
             eprintln!("Error: Day should exist");
             exit(2);

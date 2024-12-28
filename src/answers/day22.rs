@@ -78,13 +78,11 @@ fn prune(secret: Secret) -> Secret {
 
 type Bananas = u64;
 fn part2(input: &Input) -> Bananas {
-    let mut sum = 0;
     let mut cache: HashMap<Secret, Secret> = HashMap::new();
     
-    let mut all_best_values = Vec::new();
+    let mut best_value: HashMap<(i16, i16, i16, i16), u64> = HashMap::new();
     for val in input.lines().map(|line| line.parse::<Secret>().expect("should be number")) {
         let mut found_changes: HashSet<(i16,i16,i16,i16)> = HashSet::new();
-        let mut best_value = HashMap::new();
         let mut timeline = Vec::with_capacity(2000);
         let mut next = val;
         let mut prev_digit = get_digit(val);
@@ -102,16 +100,14 @@ fn part2(input: &Input) -> Bananas {
         let (_v3,mut d3) = timeline[2];
         for (v4,d4) in timeline.into_iter().skip(3) {
             if !found_changes.contains(&(d1,d2,d3,d4)) {
-                best_value.insert((d1,d2,d3,d4), v4);
                 found_changes.insert((d1,d2,d3,d4));
+                best_value.entry((d1,d2,d3,d4)).and_modify(|v| *v += v4 as Bananas).or_default();
             }
 
             d1 = d2;
             d2 = d3;
             d3 = d4;
         }
-
-        all_best_values.push(best_value);
     }
 
     let mut max: Bananas = 0;
@@ -119,14 +115,10 @@ fn part2(input: &Input) -> Bananas {
         for d2 in -9..=9 {
             for d3 in -9..=9 {
                 for d4 in -9..=9 {
-                    let mut inner_sum: Bananas = 0;
-                    for best_values in all_best_values.iter() {
-                        if let Some(val) = best_values.get(&(d1,d2,d3,d4)) {
-                            inner_sum += *val as Bananas;
+                    if let Some(val) = best_value.get(&(d1,d2,d3,d4)) {
+                        if *val > max {
+                            max = *val;
                         }
-                    }
-                    if inner_sum > max {
-                        max = inner_sum;
                     }
                 }
             }
