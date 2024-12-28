@@ -1,4 +1,6 @@
+use std::cmp::Ordering;
 use std::collections::{HashMap, VecDeque};
+use std::fmt::Display;
 use std::str::FromStr;
 use std::{fs::read_to_string, io};
 use std::time::Instant;
@@ -40,9 +42,15 @@ impl Gate {
                 wires[&self.b]
             },
         };
-        println!("executing {:?}={a:?} {:?} {:?}={b:?} into {:?}",
-            self.a, self.op, self.b, self.target);
+        //println!("executing {:?}={a:?} {:?} {:?}={b:?} into {:?}",
+            //self.a, self.op, self.b, self.target);
         wires.insert(self.target.clone(), self.op.calculate(a, b));
+    }
+}
+
+impl Display for Gate {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {} {} -> {}", self.a, self.op, self.b, self.target)
     }
 }
 
@@ -59,6 +67,16 @@ impl Ops {
             Ops::And => a & b,
             Ops::Or => a | b,
             Ops::Xor => a ^ b,
+        }
+    }
+}
+
+impl Display for Ops {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Ops::And => write!(f, "AND"),
+            Ops::Or => write!(f, "OR"),
+            Ops::Xor => write!(f, "XOR"),
         }
     }
 }
@@ -161,8 +179,6 @@ fn part1(input: &Input) -> Decimal {
         let wire = ready.pop_front().unwrap();
         let gate = &gate_lut[&wire];
 
-        println!("starting gate of {wire:?}");
-
         gate.execute(&mut wires, &gate_lut);
     }
 
@@ -175,15 +191,19 @@ fn part1(input: &Input) -> Decimal {
 
     outputs.sort();
 
-    let mut iter = outputs.into_iter().rev();
+    into_decimal(&outputs, &wires)
+}
+
+fn into_decimal(outputs: &[&String], wires: &Wires) -> Decimal {
+    let mut iter = outputs.iter().rev();
     let mut result = 0;
-    let v = wires[iter.next().unwrap()];
+    let v = wires[*iter.next().unwrap()];
     if v {
         result += 1;
     }
     for z in iter {
         result <<= 1;
-        let v = wires[z];
+        let v = wires[*z];
         if v {
             result += 1;
         }
@@ -192,10 +212,317 @@ fn part1(input: &Input) -> Decimal {
     result
 }
 
-fn part2(input: &Input) -> i32 {
-    let result = 0; // so rust shuts up
+fn part2(input: &Input) -> Vec<String> {
+    let (mut wires, mut gates) = (*input).clone();
 
-    result
+    //let mut list: Vec<_> = wires.iter().collect();
+    //list.sort();
+
+    //println!("List:");
+    //println!("{list:?}");
+    
+    let mut alias = HashMap::new();
+    let mut reverse_alias = HashMap::new();
+    for gate in gates.iter() {
+        if gate.target.starts_with("z") {
+            // dont want to rename outputs
+            continue;
+        }
+        if gate.a.starts_with("x") && gate.b.starts_with("y") {
+            let op = gate.op.to_string();
+            let num: String = gate.a.chars().skip(1).collect();
+            let new_name = format!("{op}xy{num}");
+            if &new_name == "ANDxy00" {
+                alias.insert(gate.target.clone(), "CARRY00".to_string());
+                reverse_alias.insert("CARRY00".to_string(), gate.target.clone());
+            } else {
+                reverse_alias.insert(new_name.clone(), gate.target.clone());
+                alias.insert(gate.target.clone(), new_name);
+            }
+        } else if gate.b.starts_with("x") && gate.a.starts_with("y") {
+            let op = gate.op.to_string();
+            let num: String = gate.a.chars().skip(1).collect();
+            let new_name = format!("{op}yx{num}");
+            reverse_alias.insert(new_name.clone(), gate.target.clone());
+            alias.insert(gate.target.clone(), new_name);
+        } else {
+            match gate.target.as_str() {
+                "qnf" => {
+                    alias.insert(gate.target.clone(), "CARRY01".to_string());
+                    reverse_alias.insert("CARRY01".to_string(), gate.target.clone());
+                },
+                "vnm" => {
+                    alias.insert(gate.target.clone(), "CARRY02".to_string());
+                    reverse_alias.insert("CARRY02".to_string(), gate.target.clone());
+                },
+                "jdk" => {
+                    alias.insert(gate.target.clone(), "CARRY03".to_string());
+                    reverse_alias.insert("CARRY03".to_string(), gate.target.clone());
+                },
+                "jtm" => {
+                    alias.insert(gate.target.clone(), "CARRY04".to_string());
+                    reverse_alias.insert("CARRY04".to_string(), gate.target.clone());
+                },
+                _ => (),
+            }
+        }
+    }
+
+    // apply alias
+    for gate in gates.iter_mut() {
+        if let Some(alias) = alias.get(&gate.target) { gate.target = alias.to_string() }
+
+        if let Some(alias) = alias.get(&gate.a) { gate.a = alias.to_string() }
+
+        if let Some(alias) = alias.get(&gate.b) { gate.b = alias.to_string() }
+    } 
+
+    let mut x_num: i64 = 20_000_000_000_000;
+    let mut y_num: i64 = 5_000_000_000_000;
+    for a in 0..=4 {
+        for b in 0..=9 {
+            if a == 4 && b == 5 {
+                break;
+            }
+            let x = format!("x{a}{b}");
+            let y = format!("y{a}{b}");
+            let x_bit = x_num & 1;
+            let y_bit = y_num & 1;
+            wires.insert(x, x_bit==1);
+            wires.insert(y, y_bit==1);
+            x_num >>= 1;
+            y_num >>= 1;
+        }
+    }
+
+    let mut x_list = Vec::new();
+    let mut y_list = Vec::new();
+    for wire in wires.keys() {
+        if wire.starts_with("x") {
+            x_list.push(wire);
+        }
+        if wire.starts_with("y") {
+            y_list.push(wire);
+        }
+    }
+    x_list.sort();
+    y_list.sort();
+    let expected = into_decimal(&x_list, &wires) + into_decimal(&y_list, &wires);
+
+
+    let mut gate_lut = HashMap::new();
+    for gate in gates {
+        gate_lut.insert(gate.target.clone(), gate);
+    }
+
+    let mut swaps = vec![
+        "fkb".to_string(),"z16".to_string(),
+        reverse_alias["XORxy21"].clone(),reverse_alias["ANDyx21"].clone(),
+        "rdn".to_string(),"z31".to_string(),
+        "rrn".to_string(),"z37".to_string(),
+    ];
+
+    // mistake: bit 16
+    // carry of 16 was swapped with z16
+    let mut result_gate = gate_lut["fkb"].clone();
+    let mut carry_gate = gate_lut["z16"].clone();
+
+    carry_gate.target = "fkb".to_string();
+    result_gate.target = "z16".to_string();
+
+    gate_lut.insert("fkb".to_string(), carry_gate);
+    gate_lut.insert("z16".to_string(), result_gate);
+
+    println!("carry_gate 16: {}", &gate_lut["fkb"]);
+    println!("result_gate 16: {}", &gate_lut["z16"]);
+
+    // mistake: bit 21
+    // XOR and AND are used in the wrong places
+    let mut xor_gate = gate_lut["XORxy21"].clone();
+    let mut and_gate = gate_lut["ANDyx21"].clone();
+
+    xor_gate.target = "ANDyx21".to_string();
+    and_gate.target = "XORxy21".to_string();
+
+    gate_lut.insert("ANDyx21".to_string(), xor_gate);
+    gate_lut.insert("XORxy21".to_string(), and_gate);
+
+    // mistake: bit 31
+    // carry of 31 was swapped with z31
+    let mut result_gate = gate_lut["rdn"].clone();
+    let mut carry_gate = gate_lut["z31"].clone();
+
+    carry_gate.target = "rdn".to_string();
+    result_gate.target = "z31".to_string();
+
+    gate_lut.insert("rdn".to_string(), carry_gate);
+    gate_lut.insert("z31".to_string(), result_gate);
+
+    // mistake: bit 37
+    // AND of 37 was swapped with z37
+    let mut result_gate = gate_lut["rrn"].clone();
+    let mut carry_gate = gate_lut["z37"].clone();
+
+    carry_gate.target = "rrn".to_string();
+    result_gate.target = "z37".to_string();
+
+    gate_lut.insert("rrn".to_string(), carry_gate);
+    gate_lut.insert("z37".to_string(), result_gate);
+
+    let mut sorted: Vec<Gate> = gate_lut.values().cloned().collect();
+    
+    sorted.sort_by(|a,b| {
+        if let Some(i) = a.a.find(|c: char| c.is_ascii_digit()) {
+            if let Some(j) = b.a.find(|c: char| c.is_ascii_digit()) {
+                a.a[i..].cmp(&b.a[j..])
+            } else if let Some(j) = b.b.find(|c: char| c.is_ascii_digit()) {
+                a.a[i..].cmp(&b.b[j..])
+            } else if let Some(j) = b.target.find(|c: char| c.is_ascii_digit()) {
+                a.a[i..].cmp(&b.target[j..])
+            } else {
+                Ordering::Less
+            }
+        } else if let Some(i) = a.b.find(|c: char| c.is_ascii_digit()) {
+            if let Some(j) = b.a.find(|c: char| c.is_ascii_digit()) {
+                a.b[i..].cmp(&b.a[j..])
+            } else if let Some(j) = b.b.find(|c: char| c.is_ascii_digit()) {
+                a.b[i..].cmp(&b.b[j..])
+            } else if let Some(j) = b.target.find(|c: char| c.is_ascii_digit()) {
+                a.b[i..].cmp(&b.target[j..])
+            } else {
+                Ordering::Less
+            }
+        } else if let Some(i) = a.target.find(|c: char| c.is_ascii_digit()) {
+            if let Some(j) = b.a.find(|c: char| c.is_ascii_digit()) {
+                a.target[i..].cmp(&b.a[j..])
+            } else if let Some(j) = b.b.find(|c: char| c.is_ascii_digit()) {
+                a.target[i..].cmp(&b.b[j..])
+            } else if let Some(j) = b.target.find(|c: char| c.is_ascii_digit()) {
+                a.target[i..].cmp(&b.target[j..])
+            } else {
+                Ordering::Less
+            }
+        } else if let Some(_j) = b.a.find(|c: char| c.is_ascii_digit()) {
+            Ordering::Greater
+        } else if let Some(_j) = b.b.find(|c: char| c.is_ascii_digit()) {
+            Ordering::Greater
+        } else if let Some(_j) = b.target.find(|c: char| c.is_ascii_digit()) {
+            Ordering::Greater
+        } else {
+            Ordering::Equal
+        }
+    });
+
+    for gate in sorted {
+        println!("Gate: {gate}");
+    }
+
+    let result = part1(&(wires.clone(), gate_lut.values().cloned().collect()));
+    println!("result_decimal   = {result}");
+    println!("expected_decimal = {expected}");
+    println!("result  : {result:046b}");
+    println!("expected: {expected:046b}");
+
+    let mut exp = expected;
+    let mut res = result;
+    for error_pos in 0..45 {
+        let bit_exp = exp & 1;
+        let bit_res = res & 1;
+
+        if bit_exp != bit_res {
+            println!("error bit is in position {error_pos}");
+            break;
+        }
+        res >>= 1;
+        exp >>= 1;
+    }
+
+    swaps.sort();
+    swaps
+}
+
+fn test_adder(num: &str, input: &Input) {
+    println!("testing {num}");
+
+    let (mut wires, gates) = (*input).clone();
+    let mut gate_lut = HashMap::new();
+    for gate in gates {
+        gate_lut.insert(gate.target.clone(), gate);
+    }
+
+    println!("0,0");
+    *wires.entry(format!("x{num}")).or_default() = false;
+    *wires.entry(format!("y{num}")).or_default() = false;
+
+    gate_lut[&format!("z{num}")].execute(&mut wires, &gate_lut);
+    println!("z = {}", wires[&format!("z{num}")]);
+
+    let (mut wires, gates) = (*input).clone();
+    let mut gate_lut = HashMap::new();
+    for gate in gates {
+        gate_lut.insert(gate.target.clone(), gate);
+    }
+
+    println!("1,0");
+    *wires.entry(format!("x{num}")).or_default() = true;
+    *wires.entry(format!("y{num}")).or_default() = false;
+
+    gate_lut[&format!("z{num}")].execute(&mut wires, &gate_lut);
+    println!("z = {}", wires[&format!("z{num}")]);
+
+    let (mut wires, gates) = (*input).clone();
+    let mut gate_lut = HashMap::new();
+    for gate in gates {
+        gate_lut.insert(gate.target.clone(), gate);
+    }
+
+    println!("0,1");
+    *wires.entry(format!("x{num}")).or_default() = false;
+    *wires.entry(format!("y{num}")).or_default() = true;
+
+    gate_lut[&format!("z{num}")].execute(&mut wires, &gate_lut);
+    println!("z = {}", wires[&format!("z{num}")]);
+
+    let (mut wires, gates) = (*input).clone();
+    let mut gate_lut = HashMap::new();
+    for gate in gates {
+        gate_lut.insert(gate.target.clone(), gate);
+    }
+
+    println!("1,1");
+    *wires.entry(format!("x{num}")).or_default() = true;
+    *wires.entry(format!("y{num}")).or_default() = true;
+
+    gate_lut[&format!("z{num}")].execute(&mut wires, &gate_lut);
+    println!("z = {}", wires[&format!("z{num}")]);
+}
+
+fn print_dependencies(node: &String, gate_lut: &HashMap<String, Gate>) {
+    let mut q = VecDeque::new();
+    q.push_back((0, node));
+    println!("Dependencies of {node:?}");
+
+    let mut prev_lvl = 0;
+    while !q.is_empty() {
+        let (lvl, node) = q.pop_front().unwrap();
+
+        if prev_lvl != lvl {
+            prev_lvl = lvl;
+            println!();
+        }
+
+        let gate = gate_lut.get(node);
+
+        match gate {
+            Some(gate) => {
+                q.push_back((lvl+1, &gate.a));
+                q.push_back((lvl+1, &gate.b));
+                print!("{node}: {} {:?} {}; ",&gate.a, gate.op,&gate.b);
+            },
+            None => print!("{node},"),
+        }
+    }
+    println!();
 }
 
 #[cfg(test)]
